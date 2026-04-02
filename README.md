@@ -40,4 +40,8 @@ Will be defined by the linker and contain the correct value.
 
 **Note:** We may also embed information about the correct persistent settings location this way as well.
 
+The application start is always set as the bootloader boundary/end.
 
+**IMPORTANT NOTE:** We must set a fixed bootloader partition size. All applications using the bootloader will have to have their linker scripts updated with the correct start address: `0x08000000 + bootloader_size`. This has to happen because address offsetting is nontrivial - things like jump tables, function pointers, NVIC, are addressed relative to base, so it's not as simple as just subtract an offset from every write location - the actual flash data in certain scenarios is offsetted from the base. 
+
+More notes on how to handle this with debugging workflow, etc. to follow.
