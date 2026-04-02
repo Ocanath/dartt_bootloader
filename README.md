@@ -8,6 +8,13 @@ This project aims to create a generic bootloader based on DARTT. The DARTT inter
 
 1. Access to the interface over which DARTT will be routed
 
+## Code Architecture
+
+The bootloader core is implemented in `shared/`. The core bootloader logic and call sites are defined there. All hardware facing functions will be declared in shared with no definition - it is up to the specific project that links them to define the stubs.
+
+This project will have a set number of dedicated bootloader projects that target a specific hardware platform and link to `shared/`. Each bootloader sub-project will be a fully functional & tested bootloader program that compiles to an executable binary for the target platform.
+
+
 ## Functions
 
 The bootloader will have a deferred action interface which allows the triggering of certain commands. These can include:
