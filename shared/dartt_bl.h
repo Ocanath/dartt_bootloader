@@ -32,7 +32,10 @@ typedef struct dartt_bl_t
 	
 	//read-only section (read only not enforced as of )
 	uint32_t page_size;	//number of bytes
-	uint32_t bootloader_end__;	//a compile time constant, set by the linker. The start of the application, and the end of the bootloader.
+
+	//a compile time constant, set by the linker. The start of the application, and the end of the bootloader. 
+	//Should be a preallocated value for predictable boundaries
+	uint32_t bootloader_end_address;	
 
 	dartt_bl_persistent_t fds;	//persistent settings for the bootloader, such as module number, a shared secret for decryption, etc. Currently only used for module number
 }dartt_bl_t;
