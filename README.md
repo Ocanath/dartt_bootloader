@@ -12,4 +12,8 @@ This project aims to create a generic bootloader based on DARTT. The DARTT inter
 
 1. The bootloader will have a deferred action interface which allows the triggering of certain commands. These can include:
 
-1. Write the buffer 
+1. Read memory from a specific location into the buffer
+1. Trigger an erasure of the currently selected page(s). 
+1. Write the buffer to a specific memory location
+1. Compute the CRC32 of the application image, for verification
+
