@@ -12,6 +12,10 @@ enum {NO_ACTION,
 	GET_VERSION_HASH	//dispatch flag to load the --short version hash in to the working buffer	
 };
 
+enum {
+	DARTT_BL_SUCCESS = 0,
+	DARTT_BL_NULLPTR = -1
+};
 
 //This typedef struct defines the blueprint/memory layout of the primary bootloader control structure
 typedef struct dartt_bl_t
@@ -40,5 +44,10 @@ typedef struct dartt_bl_t
 	dartt_bl_persistent_t fds;	//persistent settings for the bootloader, such as module number, a shared secret for decryption, etc. Currently only used for module number
 }dartt_bl_t;
 
+/*Initialize the bootloader. calls unimplemented helper functions*/
+uint32_t dartt_bl_init(dartt_bl_t * pbl);
+
+/*main event handler. */
+void dartt_bl_event_handler(dartt_bl_t * pbl);
 
 #endif
