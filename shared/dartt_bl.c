@@ -25,6 +25,21 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 	dartt_bl_handle_comms(pbl);
 	if(pbl->action_flag != NO_ACTION)
 	{
-
+		switch (pbl->action_flag)
+		{
+			case(START_APPLICATION):
+			{
+				break;
+			}
+			case(SAVE_SETTINGS):
+			{
+				pbl->action_status = dartt_bl_update_filesystem(pbl);
+				break;
+			}
+			default:
+			{
+				break;
+			}
+		}
 	}	
 }
