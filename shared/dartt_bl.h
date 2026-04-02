@@ -23,8 +23,7 @@ typedef struct dartt_bl_t
 
 	uint32_t crc32;	//result of the latest triggered GET_CRC32 operation
 	
-	dartt_bl_persistent_t fds;	
-	/* data */
+	dartt_bl_persistent_t fds;	//persistent settings for the bootloader, such as module number, a shared secret for decryption, etc. Currently only used for module number
 }dartt_bl_t;
 
 
