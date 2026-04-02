@@ -1,0 +1,6 @@
+[submodule "external/dartt-protocol"]
+	path = external/dartt-protocol
+	url = https://github.com/ocanath/dartt-protocol
+[submodule "external/byte-stuffing"]
+	path = external/byte-stuffing
+	url = https://github.com/ocanath/byte-stuffing
