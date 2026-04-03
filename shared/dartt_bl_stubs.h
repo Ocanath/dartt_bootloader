@@ -22,7 +22,7 @@ uint32_t dartt_bl_get_attributes(dartt_bl_t * pbl);
 
 
 /*write the persistent config memory region*/
-uint32_t dartt_bl_update_filesystem(dartt_bl_t * pbl);
+uint32_t dartt_bl_update_persistent_settings(dartt_bl_t * pbl);
 
 /*
 	This must handle any/all comm interfaces that are in use to pbl.
@@ -38,10 +38,14 @@ uint32_t dartt_bl_handle_comms(dartt_bl_t * pbl);
 
 
 /*
-	Read requested filesystem chunk into the working buffer.
+	Stub to reset all clock and peripheral settings
 */
-uint32_t dartt_bl_read_from_filesystem(dartt_bl_t * pbl);
+uint32_t dartt_bl_cleanup_system(void);	//stub called in START_APPLICATION
 
+/*
+	Set VTOR, load MSP, jump to application code
+*/
+uint32_t dartt_bl_start_application(dartt_bl_t * pbl);
 
 
 #endif

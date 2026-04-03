@@ -14,7 +14,10 @@ enum {NO_ACTION,
 
 enum {
 	DARTT_BL_SUCCESS = 0,
-	DARTT_BL_NULLPTR = -1
+	DARTT_BL_INITIALIZED = 1,	//used primarily for the flashing tool to track restarts. If this gets set to 1 after a potentially dangerous op, the flashing tool knows it did a bad thing that triggered a hardfault->reset
+	DARTT_BL_INITIALIZATION_FAILURE = -3,	//indicate failure to initialize. Also used for flashing tool for unambiguous indication of a hardfault, separate branch for hardfault leading to catastrophic initialization error
+	DARTT_BL_NULLPTR = -1,
+	DARTT_BL_READ_OVERRUN = -2,	//workign buffer read request size invalid
 };
 
 //This typedef struct defines the blueprint/memory layout of the primary bootloader control structure
@@ -45,7 +48,7 @@ typedef struct dartt_bl_t
 }dartt_bl_t;
 
 /*Initialize the bootloader. calls unimplemented helper functions*/
-uint32_t dartt_bl_init(dartt_bl_t * pbl);
+void dartt_bl_init(dartt_bl_t * pbl);
 
 /*main event handler. */
 void dartt_bl_event_handler(dartt_bl_t * pbl);

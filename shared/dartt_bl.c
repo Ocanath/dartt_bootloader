@@ -1,39 +1,70 @@
 #include "dartt_bl.h"
 #include "dartt_bl_stubs.h"
+#include <stdbool.h>
 
+uint32_t dartt_bl_read_mem(dartt_bl_t * pbl);
 
 /*Initialize the bootloader. calls unimplemented helper functions*/
-uint32_t dartt_bl_init(dartt_bl_t * pbl)
+void dartt_bl_init(dartt_bl_t * pbl)
 {
-	//initialize the filesystem
-	uint32_t rc = dartt_bl_load_fds(pbl);
-	if(rc != DARTT_BL_SUCCESS)
+	if(pbl == NULL)
 	{
-		return rc;
+		return;	//invalid pbl, silent failure
+	}
+	//initialize the filesystem
+	if(dartt_bl_load_fds(pbl) != DARTT_BL_SUCCESS)
+	{
+		pbl->action_status = DARTT_BL_INITIALIZATION_FAILURE;
+		return;
 	}
 	//initialize attributes
-	rc = dartt_bl_get_attributes(pbl);
-	if(rc != DARTT_BL_SUCCESS)
+	if(dartt_bl_get_attributes(pbl) != DARTT_BL_SUCCESS)
 	{
-		return rc;
+		pbl->action_status = DARTT_BL_INITIALIZATION_FAILURE;	//if you ever see this code, panic
+		return;
 	}
+	pbl->action_status = DARTT_BL_INITIALIZED;
 }
+
 
 /*Main event handler. called in a loop.*/
 void dartt_bl_event_handler(dartt_bl_t * pbl)
 {
-	dartt_bl_handle_comms(pbl);
+	dartt_bl_handle_comms(pbl);	//update pbl struct from comm interfaces
+
 	if(pbl->action_flag != NO_ACTION)
 	{
 		switch (pbl->action_flag)
 		{
-			case(START_APPLICATION):
+			case START_APPLICATION:
+			{
+				dartt_bl_cleanup_system();
+				dartt_bl_start_application(pbl);
+				break;
+			}
+			case READ_BUFFER:
 			{
 				break;
 			}
-			case(SAVE_SETTINGS):
+			case WRITE_BUFFER:
 			{
-				pbl->action_status = dartt_bl_update_filesystem(pbl);
+				break;
+			}
+			case ERASE_PAGES:
+			{
+				break;
+			}
+			case GET_CRC32:
+			{
+				break;
+			}
+			case SAVE_SETTINGS:
+			{
+				pbl->action_status = dartt_bl_update_persistent_settings(pbl);
+				break;
+			}
+			case GET_VERSION_HASH:
+			{
 				break;
 			}
 			default:
@@ -42,4 +73,30 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 			}
 		}
 	}	
+}
+
+
+/*
+	Read requested target memory range into the working buffer.
+
+	Assumes flash is always memory mapped. If your system runs from external
+	flash memory, you will need to externally define this function with the appropriate
+	read operations, or else drop in your own.
+*/
+uint32_t dartt_bl_read_mem(dartt_bl_t * pbl)
+{
+	if(pbl == NULL)
+	{
+		return DARTT_BL_NULLPTR;
+	}
+	if(pbl->working_size > sizeof(pbl->working_buffer))
+	{
+		return DARTT_BL_READ_OVERRUN;
+	}
+	unsigned char * p_rmem = (unsigned char *)(pbl->working_address);
+	for(uint32_t i = 0; i < pbl->working_size; i++)
+	{
+		pbl->working_buffer[i] = p_rmem[i];
+	}
+	return DARTT_BL_SUCCESS;
 }

@@ -29,6 +29,8 @@ The bootloader will have a deferred action interface which allows the triggering
 
 Actions dispatched via the action register upon completion will load their return code into `action_status`, indicating success or failure, and indicate completion by setting `action_flag` to `NO_ACTION`. `action_status` is considered stale if `action_flag` is nonzero, and always corresponds to the most recently completed dispatched action.
 
+Certain memory operations may trigger a HardFault. **The recommended action on hardfault is always to reset** `action_status` gets loaded 
+
 ### Erasure
 ### Writing
 ### Reading
