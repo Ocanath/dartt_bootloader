@@ -8,12 +8,16 @@
   :line: 6
   :message: ''
   :unity_test_time: 0
-:failures: []
+:failures:
+- :test: test_getcrc32
+  :line: 14
+  :message: Test case crashed
+  :unity_test_time: 0
 :ignores: []
 :counts:
-  :total: 1
+  :total: 2
   :passed: 1
-  :failed: 0
+  :failed: 1
   :ignored: 0
 :stdout: []
-:time: 0.03680640005040914
+:time: 0.006839000037871301

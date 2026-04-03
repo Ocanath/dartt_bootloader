@@ -17,6 +17,7 @@ char* GlobalOrderError;
 extern void setUp(void);
 extern void tearDown(void);
 extern void test_bl_init(void);
+extern void test_getcrc32(void);
 
 
 /*=======Mock Management=====*/
@@ -96,6 +97,8 @@ static void run_test(UnityTestFunction func, const char* name, UNITY_LINE_TYPE l
       UNITY_PRINT_EOL();
       UnityPrint("  test_bl_init");
       UNITY_PRINT_EOL();
+      UnityPrint("  test_getcrc32");
+      UNITY_PRINT_EOL();
       return 0;
     }
     return parse_status;
@@ -103,6 +106,7 @@ static void run_test(UnityTestFunction func, const char* name, UNITY_LINE_TYPE l
 #endif
   UnityBegin("test_dartt_bl.c");
   run_test(test_bl_init, "test_bl_init", 6);
+  run_test(test_getcrc32, "test_getcrc32", 14);
 
   return UNITY_END();
 }

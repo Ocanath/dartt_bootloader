@@ -1,8 +1,15 @@
 #include "dartt_bl_stubs.h"
 
+unsigned char fake_application_area[0x2000] = {0xFFFFFFFF};	
 
 uint32_t dartt_bl_load_fds(dartt_bl_t * pbl)
 {
+	if(pbl == NULL)
+	{
+		return DARTT_BL_NULLPTR;
+	}
+	pbl->fds.application_end_addr = (uint32_t)(&fake_application_area[sizeof(fake_application_area) - 1]);
+	pbl->application_start_address = (uint32_t)(&fake_application_area[0]); 
 	return DARTT_BL_SUCCESS;
 }
 

@@ -73,9 +73,11 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 			}
 			default:
 			{
+				pbl->action_status = DARTT_BL_INVALID_ACTION_REQUEST;
 				break;
 			}
 		}
+		pbl->action_flag = NO_ACTION;
 	}	
 }
 
@@ -120,6 +122,6 @@ uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl)
 	}
 	unsigned char * p_rmem = (unsigned char *)(pbl->application_start_address);	
 	size_t app_size = (pbl->fds.application_end_addr - pbl->application_start_address);
-	pbl->crc32 = get_crc32(p_rmem, app_size);
+	pbl->fds.application_crc32 = get_crc32(p_rmem, app_size);
 	return DARTT_BL_SUCCESS;
 }
