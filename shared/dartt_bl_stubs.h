@@ -5,6 +5,8 @@
 
 /*Implementation-specific stubs. All of these functions must have an application defined implementation for the bootloader to function*/
 
+extern const unsigned char * application_start_addr__;	//must be defined by caller, a compile time constant
+
 /*
 This must load the filesystem from persistent storage.
 The filesystem gets loaded into pbl->fds.
@@ -33,6 +35,13 @@ uint32_t dartt_bl_update_persistent_settings(dartt_bl_t * pbl);
 	In addition to any framing/decoding logic, such as DMA polling, COBS unstuffing, decryption, etc.
 	
 	All interfaces should be called in this stub. Called within the event handler.
+
+
+	Important note: this puts the burden of whether the layout is standards compliant on the embedded system/implementation.
+	You could pass raw structs to dartt, or work with raw buffers and add an indirection layer for mapping it to the control struct symbols.
+	In reality on an embedded system, there's no reason to not use raw structs if the MCU implementation is:
+		1. little endian
+		2. 32bit 
 */
 uint32_t dartt_bl_handle_comms(dartt_bl_t * pbl);
 
@@ -46,6 +55,7 @@ uint32_t dartt_bl_cleanup_system(void);	//stub called in START_APPLICATION
 	Set VTOR, load MSP, jump to application code
 */
 uint32_t dartt_bl_start_application(dartt_bl_t * pbl);
+
 
 
 #endif

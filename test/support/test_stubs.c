@@ -1,6 +1,8 @@
 #include "dartt_bl_stubs.h"
+#include "unity.h"
 
 unsigned char fake_application_area[0x2000] = {0xFFFFFFFF};	
+const unsigned char * application_start_addr__ = fake_application_area;	//must define this
 
 uint32_t dartt_bl_load_fds(dartt_bl_t * pbl)
 {
@@ -8,8 +10,9 @@ uint32_t dartt_bl_load_fds(dartt_bl_t * pbl)
 	{
 		return DARTT_BL_NULLPTR;
 	}
-	pbl->fds.application_end_addr = (uint32_t)(&fake_application_area[sizeof(fake_application_area) - 1]);
-	pbl->application_start_address = (uint32_t)(&fake_application_area[0]); 
+	TEST_ASSERT_LESS_THAN(0xFFFFFFFF, sizeof(fake_application_area));
+	pbl->fds.application_size = sizeof(fake_application_area);
+	
 	return DARTT_BL_SUCCESS;
 }
 

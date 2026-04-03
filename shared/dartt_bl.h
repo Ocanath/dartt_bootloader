@@ -10,7 +10,8 @@ enum {
 	ERASE_PAGES,	//dispatch flag for erasing the target page(s)
 	GET_CRC32,		//dispatch flag for get the CRC32 of the current flashed application
 	SAVE_SETTINGS,
-	GET_VERSION_HASH	//dispatch flag to load the --short version hash in to the working buffer	
+	GET_VERSION_HASH,	//dispatch flag to load the --short version hash in to the working buffer	
+	GET_APPLICATION_START_ADDR
 };
 
 enum {
@@ -18,7 +19,7 @@ enum {
 	DARTT_BL_INITIALIZED = 1,	//used primarily for the flashing tool to track restarts. If this gets set to 1 after a potentially dangerous op, the flashing tool knows it did a bad thing that triggered a hardfault->reset
 	DARTT_BL_INITIALIZATION_FAILURE = 2,	//indicate failure to initialize. Also used for flashing tool for unambiguous indication of a hardfault, separate branch for hardfault leading to catastrophic initialization error
 	DARTT_BL_NULLPTR = -1,
-	DARTT_BL_READ_OVERRUN = -2,	//workign buffer read request size invalid
+	DARTT_BL_WORKING_BUFFER_OVERRUN = -2,	//workign buffer read request size invalid
 	DARTT_BL_APPLICATION_RANGE_INVALID = -3,
 	DARTT_BL_INVALID_ACTION_REQUEST = -4
 };
@@ -41,10 +42,7 @@ typedef struct dartt_bl_t
 	//read-only section (read only not enforced as of )
 	uint32_t page_size;	//number of bytes
 
-	//a compile time constant, set by the linker. The start of the application, and the end of the bootloader. 
-	//Should be a preallocated value for predictable boundaries
-	uint32_t application_start_address;	
-
+	//
 	dartt_bl_persistent_t fds;	//persistent settings for the bootloader, such as module number, a shared secret for decryption, etc. Currently only used for module number
 }dartt_bl_t;
 

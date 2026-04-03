@@ -1,5 +1,6 @@
 #include "checksum.h"
 #include "dartt_bl.h"
+#include "dartt_bl_stubs.h"
 #include "unity.h"
 
 
@@ -16,9 +17,33 @@ void test_getcrc32(void)
 	dartt_bl_t bootloader_ctl = {0};
 	dartt_bl_init(&bootloader_ctl);
 	TEST_ASSERT_EQUAL(0, bootloader_ctl.fds.application_crc32);
+	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
+	
 	bootloader_ctl.action_flag = GET_CRC32;
 	dartt_bl_event_handler(&bootloader_ctl);
 	TEST_ASSERT_EQUAL(NO_ACTION,bootloader_ctl.action_flag);
-	TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_status);
+	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
 	TEST_ASSERT_NOT_EQUAL(0, bootloader_ctl.fds.application_crc32);	//assume correct crc32 calculation from dartt tests
+}
+
+void test_get_app_start(void)
+{
+	dartt_bl_t bootloader_ctl = {0};
+	dartt_bl_init(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
+
+	TEST_ASSERT_EQUAL(0, bootloader_ctl.working_size);
+	bootloader_ctl.action_flag = GET_APPLICATION_START_ADDR;
+	dartt_bl_event_handler(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(NO_ACTION,bootloader_ctl.action_flag);
+	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
+	TEST_ASSERT_EQUAL(sizeof(unsigned char *), bootloader_ctl.working_size);
+	uintptr_t p = 0;
+	for(int i = 0; i < sizeof(unsigned char *); i++)
+	{
+		int shift = i*8;
+		p |= ((uintptr_t)(bootloader_ctl.working_buffer[i])) << shift;
+	}
+	uintptr_t startref = (uintptr_t)(application_start_addr__);
+	TEST_ASSERT_EQUAL(startref, p);
 }
