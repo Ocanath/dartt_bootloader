@@ -1,8 +1,10 @@
 #include "dartt_bl.h"
 #include "dartt_bl_stubs.h"
+#include "checksum.h"
 #include <stdbool.h>
 
 uint32_t dartt_bl_read_mem(dartt_bl_t * pbl);
+uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl);
 
 /*Initialize the bootloader. calls unimplemented helper functions*/
 void dartt_bl_init(dartt_bl_t * pbl)
@@ -44,6 +46,7 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 			}
 			case READ_BUFFER:
 			{
+				pbl->action_status = dartt_bl_read_mem(pbl);
 				break;
 			}
 			case WRITE_BUFFER:
@@ -56,6 +59,7 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 			}
 			case GET_CRC32:
 			{
+				pbl->action_status = dartt_bl_get_crc32(pbl);
 				break;
 			}
 			case SAVE_SETTINGS:
@@ -98,5 +102,24 @@ uint32_t dartt_bl_read_mem(dartt_bl_t * pbl)
 	{
 		pbl->working_buffer[i] = p_rmem[i];
 	}
+	return DARTT_BL_SUCCESS;
+}
+
+/*
+	Loads the crc32 register for verification.
+*/
+uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl)
+{
+	if(pbl == NULL)
+	{
+		return DARTT_BL_NULLPTR;
+	}
+	if(pbl->application_start_address > pbl->fds.application_end_addr)
+	{
+		return DARTT_BL_APPLICATION_RANGE_INVALID;
+	}
+	unsigned char * p_rmem = (unsigned char *)(pbl->application_start_address);	
+	size_t app_size = (pbl->fds.application_end_addr - pbl->application_start_address);
+	pbl->crc32 = get_crc32(p_rmem, app_size);
 	return DARTT_BL_SUCCESS;
 }

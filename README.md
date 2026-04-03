@@ -42,10 +42,10 @@ Certain memory operations may trigger a HardFault. **The recommended action on h
 This application gets the bootloader flash region boundary via linker script. A dedicated internal variable:
 
 ``` C
-extern uint32_t booltloader_end__;
+extern uint32_t application_start_address__;
 ```
 
-Will be defined by the linker and contain the correct value.
+Will be defined by the linker and contain the correct value. It will specifically always be the first valid address for the application. It gets loaded into the comm struct on init.
 
 **Note:** We may also embed information about the correct persistent settings location this way as well.
 

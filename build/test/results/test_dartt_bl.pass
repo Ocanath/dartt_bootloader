@@ -1,0 +1,19 @@
+---
+:source:
+  :file: test/test_dartt_bl.c
+  :dirname: test
+  :basename: test_dartt_bl.c
+:successes:
+- :test: test_bl_init
+  :line: 6
+  :message: ''
+  :unity_test_time: 0
+:failures: []
+:ignores: []
+:counts:
+  :total: 1
+  :passed: 1
+  :failed: 0
+  :ignored: 0
+:stdout: []
+:time: 0.03680640005040914

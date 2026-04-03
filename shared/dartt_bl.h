@@ -15,9 +15,10 @@ enum {NO_ACTION,
 enum {
 	DARTT_BL_SUCCESS = 0,
 	DARTT_BL_INITIALIZED = 1,	//used primarily for the flashing tool to track restarts. If this gets set to 1 after a potentially dangerous op, the flashing tool knows it did a bad thing that triggered a hardfault->reset
-	DARTT_BL_INITIALIZATION_FAILURE = -3,	//indicate failure to initialize. Also used for flashing tool for unambiguous indication of a hardfault, separate branch for hardfault leading to catastrophic initialization error
+	DARTT_BL_INITIALIZATION_FAILURE = 2,	//indicate failure to initialize. Also used for flashing tool for unambiguous indication of a hardfault, separate branch for hardfault leading to catastrophic initialization error
 	DARTT_BL_NULLPTR = -1,
 	DARTT_BL_READ_OVERRUN = -2,	//workign buffer read request size invalid
+	DARTT_BL_APPLICATION_RANGE_INVALID = -3 
 };
 
 //This typedef struct defines the blueprint/memory layout of the primary bootloader control structure
@@ -42,7 +43,7 @@ typedef struct dartt_bl_t
 
 	//a compile time constant, set by the linker. The start of the application, and the end of the bootloader. 
 	//Should be a preallocated value for predictable boundaries
-	uint32_t bootloader_end_address;	
+	uint32_t application_start_address;	
 
 	dartt_bl_persistent_t fds;	//persistent settings for the bootloader, such as module number, a shared secret for decryption, etc. Currently only used for module number
 }dartt_bl_t;
