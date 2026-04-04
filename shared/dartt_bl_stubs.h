@@ -15,9 +15,8 @@ The filesystem must have the correct structure.
 uint32_t dartt_bl_load_fds(dartt_bl_t * pbl);
 
 /*
-This must load:
-	page_size
-	bootloader_end_address
+This must load everything in attr.
+
 The bootloader checks for non-default values (nonzero) to make sure they're set
 */
 uint32_t dartt_bl_get_attributes(dartt_bl_t * pbl);
