@@ -27,16 +27,53 @@ The bootloader will have a deferred action interface which allows the triggering
 - Compute the CRC32 of the application image, for verification
 - Save persistent settings
 - Get the git version hash of the bootloader
+- Read pointers (application start, working buffer) as well as read/write to the target pointer for flash read and write operations
 
 Actions dispatched via the action register upon completion will load their return code into `action_status`, indicating success or failure, and indicate completion by setting `action_flag` to `NO_ACTION`. `action_status` is considered stale if `action_flag` is nonzero, and always corresponds to the most recently completed dispatched action.
 
 Certain memory operations may trigger a HardFault. **The recommended action on hardfault is always to reset** `action_status` gets loaded 
 
+### Pointers
+
+The application start point should be checked by the flashing tool to make sure it matches the expected value from the application binary. The application start pointer is a compile time constant in the bootloader firmware (based on linker scripting) and is also protocol defined as **TODO: FIGURE OUT HOW MUCH SPACE TO ALLOCATE FOR THE BOOTLOADER** bytes.
+
+The flashing tool should throw a code and exit if the bootloader start address does not match the start address of the target to flash.
+
+Retrieval of the application start address shall be done with the following steps:
+
+- `dartt_write_multi` call to assign `.action_flag = GET_APPLICATION_START_ADDR;`
+- Poll `.action_status` via `dartt_read_multi`. If it returns `DARTT_BL_SUCCESS` the contents of the working buffer are valid
+- Read `.working_size` AND `.working_buffer` via `dartt_read_multi`. This retrieves the target architecture size as well. Write the `.working_buffer` contents into a `uintptr_t` and validate it against the contents of the binary file to flash.
+
+### Working buffer
+
+The core flashing operations are routed through the `.working_buffer`. The `.working_buffer` is comprised of three different values:
+
+- `.working_size`
+- `.working_buffer`
+- `working_target_ptr_`
+
+#### Reading
+
+`working_target_ptr_` defines the working location for the working buffer. When the working buffer is used for reads, a `READ_BUFFER` operation loads `.working_size` bytes into the `.working_buffer`, from `working_target_ptr_` to `working_target_ptr_ + .working_size`. 
+
+There is no explicitly forbidden region of memory for reads. The target may hardfault - it is the implementer's responsibility to ensure hardfaults trigger a reset operation for proper bootloader recovery.
+
+#### Writing
+
+Similarly, the writing range on the target is from `working_target_ptr_` to `working_target_ptr_ + .working_size`. The `WRITE_BUFFER` abstracts flash write calls on the target architecture through the range and sets `.action_status` and `.action_flag` on completion, as with all deferred actions. Flash writes are target specific, and the stub must be implemented for each specific target.
+
+There is one address range explicitly blocked by the bootloader itself: the bootloader region (from target start address, `0x08000000` on STM32, up to `application_start_addr__`). Updates to the persistent settings have a convenience deferred action `SAVE_SETTINGS`, but those settings can be explicitly overwritten by the bootloader if persistent storage restructure is required in future versions.
+
+Attempted writes to illegal memory-mapped regions can result in a hardfault. There is no explicit protection from hardfaults in this protocol - it is the implementer's responsibility to ensure hardfaults result in a reset for proper bootloader recovery.
+
 ### Erasure
-### Writing
-### Reading
+
+Erasure works differently. The page attributes must be read from `.page_size`. The flashing tool must set `.erase_page` and `.erase_num_pages` before running the deferred erase operation via `ERASE_PAGES`. This calls a stub which must be implemented on each specific target.
+
 ### Verification
 
+The deferred `GET_CRC32` action calculates a crc32 value from `application_start_addr__` to `application_start_addr__ + .application_size`. The flashing tool must set `.application_size` and save for proper startup flash validation. 
 
 ## Boundary checks
 
