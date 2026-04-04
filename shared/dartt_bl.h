@@ -25,6 +25,7 @@ enum {
 	DARTT_BL_APPLICATION_RANGE_INVALID = -3,
 	DARTT_BL_INVALID_ACTION_REQUEST = -4,
 	DARTT_BL_BAD_READ_REQUEST = -5,
+	DARTT_BL_ERROR_POINTER_OVERRUN = -6
 };
 
 //This typedef struct defines the blueprint/memory layout of the primary bootloader control structure

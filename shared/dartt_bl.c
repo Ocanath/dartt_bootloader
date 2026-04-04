@@ -169,7 +169,7 @@ uint32_t dartt_bl_load_ptr_to_wbuf(dartt_bl_t * pbl, const unsigned char * point
 	}
 	if(sizeof(unsigned char *) > sizeof(pbl->working_buffer))
 	{
-		return DARTT_BL_WORKING_SIZE_INVALID;	 //you never know? (lol)
+		return DARTT_BL_ERROR_POINTER_OVERRUN;	 //you never know? (lol)
 	}
 
 	pbl->working_size = 0;
