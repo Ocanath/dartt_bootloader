@@ -28,14 +28,20 @@ enum {
 	DARTT_BL_ERROR_POINTER_OVERRUN = -6
 };
 
-typedef struct target_attributes_t
+/*
+Container for target attributes
+*/
+typedef struct dartt_bl_attributes_t
 {
 	//read-only section (read only not enforced as of )
 	uint32_t page_size;	//number of bytes
 	uint32_t write_size;
-}target_attributes_t;
+}dartt_bl_attributes_t;
 
-//This typedef struct defines the blueprint/memory layout of the primary bootloader control structure
+/*
+	Definition of the control structure.
+	This is memory mapped to dartt and is the primary communication/control surface for the bootloader
+*/
 typedef struct dartt_bl_t
 {
 	uint32_t action_flag;	//when this is assigned, perform some enumerated action. Gets written to 0 when done for caller polling purposes.
@@ -50,7 +56,7 @@ typedef struct dartt_bl_t
 	uint32_t working_size;		//casted to a pointer. the offset from working_address
 	unsigned char working_buffer[64];	//primary working buffer for the bootloader. Can be used for reads or writes
 	
-	target_attributes_t attr;	//attributes which must be loaded by the get attributes stub
+	dartt_bl_attributes_t attr;	//attributes which must be loaded by the get attributes stub
 	
 	dartt_bl_persistent_t fds;	//persistent settings for the bootloader, such as module number, a shared secret for decryption, etc. Currently only used for module number
 }dartt_bl_t;
