@@ -42,3 +42,14 @@ uint32_t dartt_bl_start_application(dartt_bl_t * pbl)
 }
 
 
+uint32_t dartt_bl_flash_write(dartt_bl_t * pbl)
+{
+	return DARTT_BL_SUCCESS;
+}
+
+
+uint32_t dartt_bl_flash_erase(dartt_bl_t * pbl)
+{
+	return DARTT_BL_SUCCESS;
+}
+

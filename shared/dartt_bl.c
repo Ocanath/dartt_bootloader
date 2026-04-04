@@ -55,10 +55,12 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 			}
 			case WRITE_BUFFER:
 			{
+				pbl->action_status = dartt_bl_flash_write(pbl);
 				break;
 			}
 			case ERASE_PAGES:
 			{
+				pbl->action_status = dartt_bl_flash_erase(pbl);
 				break;
 			}
 			case GET_CRC32:

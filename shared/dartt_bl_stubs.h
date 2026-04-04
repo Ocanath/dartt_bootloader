@@ -56,6 +56,14 @@ uint32_t dartt_bl_cleanup_system(void);	//stub called in START_APPLICATION
 */
 uint32_t dartt_bl_start_application(dartt_bl_t * pbl);
 
+/*
+	Flash write. Implement for target
+*/
+uint32_t dartt_bl_flash_write(dartt_bl_t * pbl);
 
+/*
+	Flash erase. Implement for target
+*/
+uint32_t dartt_bl_flash_erase(dartt_bl_t * pbl);
 
 #endif
