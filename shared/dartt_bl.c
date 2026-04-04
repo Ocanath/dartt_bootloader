@@ -29,6 +29,7 @@ void dartt_bl_init(dartt_bl_t * pbl)
 		pbl->action_status = DARTT_BL_INITIALIZATION_FAILURE;	//if you ever see this code, panic
 		return;
 	}
+	working_target_ptr_ = NULL;	//soft reset won't load null, so do it in init. helps with test isolation too so state isn't mutated between tests
 	pbl->action_status = DARTT_BL_INITIALIZED;
 }
 
@@ -149,7 +150,7 @@ uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl)
 		return DARTT_BL_NULLPTR;
 	}
 	
-	unsigned char * p_rmem = application_start_addr__;	//compile-time constant
+	const unsigned char * p_rmem = application_start_addr__;	//compile-time constant
 	size_t app_size = (size_t)(pbl->fds.application_size);	//IMPORTANT NOTES: the fixed size of application_size means on a 64 bit system
 
 	pbl->fds.application_crc32 = get_crc32(p_rmem, app_size);

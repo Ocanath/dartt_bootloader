@@ -1,7 +1,7 @@
 #include "dartt_bl_stubs.h"
 #include "unity.h"
 
-unsigned char fake_application_area[0x2000] = {0xFFFFFFFF};	
+unsigned char fake_application_area[0x2000] = {};	
 const unsigned char * application_start_addr__ = fake_application_area;	//must define this
 
 uint32_t dartt_bl_load_fds(dartt_bl_t * pbl)

@@ -67,6 +67,8 @@ There is one address range explicitly blocked by the bootloader itself: the boot
 
 Attempted writes to illegal memory-mapped regions can result in a hardfault. There is no explicit protection from hardfaults in this protocol - it is the implementer's responsibility to ensure hardfaults result in a reset for proper bootloader recovery.
 
+**TODO:** - Writes on target likely have an MTU/write size alignment which we'll likely want to load as an attribute. Investigate
+
 ### Erasure
 
 Erasure works differently. The page attributes must be read from `.page_size`. The flashing tool must set `.erase_page` and `.erase_num_pages` before running the deferred erase operation via `ERASE_PAGES`. This calls a stub which must be implemented on each specific target.

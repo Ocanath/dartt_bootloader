@@ -63,14 +63,8 @@ void test_set_get_working_pointer(void)
 	dartt_bl_init(&bootloader_ctl);
 	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
 
-	// TEST_ASSERT_EQUAL(0, bootloader_ctl.working_size);
-	// bootloader_ctl.action_flag = GET_WORKING_ADDR;
-	// dartt_bl_event_handler(&bootloader_ctl);
-	// TEST_ASSERT_EQUAL(NO_ACTION,bootloader_ctl.action_flag);
-	// TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
-	// TEST_ASSERT_EQUAL(sizeof(unsigned char *), bootloader_ctl.working_size);
 
-
+	TEST_ASSERT_EQUAL(0, bootloader_ctl.working_size);
 	unsigned char * new_target = &fake_application_area[5];
 	//working size already has the correct value and we checked it above with an assert
 	uint32_t rc = dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, new_target);
