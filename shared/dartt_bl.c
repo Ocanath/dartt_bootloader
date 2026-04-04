@@ -5,7 +5,10 @@
 
 uint32_t dartt_bl_read_mem(dartt_bl_t * pbl);
 uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl);
-uint32_t dartt_bl_load_application_start_addr(dartt_bl_t * pbl);
+uint32_t dartt_bl_load_ptr_to_wbuf(dartt_bl_t * pbl, const unsigned char * pointer);	//helper function for loading a pointer INTO the working buffer
+uint32_t dartt_bl_load_wbuf_to_ptr(dartt_bl_t * pbl, unsigned char ** p_pointer);
+
+static unsigned char * working_target_ptr_ = NULL;	//assigned using the working buffer on target architecture. 
 
 /*Initialize the bootloader. calls unimplemented helper functions*/
 void dartt_bl_init(dartt_bl_t * pbl)
@@ -74,7 +77,17 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 			}
 			case GET_APPLICATION_START_ADDR:
 			{
-				pbl->action_status = dartt_bl_load_application_start_addr(pbl);
+				pbl->action_status = dartt_bl_load_ptr_to_wbuf(pbl, application_start_addr__);
+				break;
+			}
+			case GET_WORKING_ADDR:
+			{
+				pbl->action_status = dartt_bl_load_ptr_to_wbuf(pbl, working_target_ptr_);
+				break;
+			}
+			case SET_WORKING_ADDR:
+			{
+				pbl->action_status = dartt_bl_load_wbuf_to_ptr(pbl, &working_target_ptr_);
 				break;
 			}
 			default:
@@ -94,6 +107,10 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 	Assumes flash is always memory mapped. If your system runs from external
 	flash memory, you will need to externally define this function with the appropriate
 	read operations, or else drop in your own.
+
+	Note - this function can, and likely will, result in hardfaults, frequently. The caller 
+	should take care to check for initializatio status codes after calling this, erase, write, 
+	or crc32 functions.
 */
 uint32_t dartt_bl_read_mem(dartt_bl_t * pbl)
 {
@@ -103,12 +120,19 @@ uint32_t dartt_bl_read_mem(dartt_bl_t * pbl)
 	}
 	if(pbl->working_size > sizeof(pbl->working_buffer))
 	{
-		return DARTT_BL_WORKING_BUFFER_OVERRUN;
+		return DARTT_BL_WORKING_SIZE_INVALID;
 	}
-	unsigned char * p_rmem = (unsigned char *)(pbl->working_address);
+	if(pbl->working_size == 0)
+	{
+		return DARTT_BL_BAD_READ_REQUEST;
+	}
+	if(working_target_ptr_ == NULL)
+	{
+		return DARTT_BL_NULLPTR;
+	}
 	for(uint32_t i = 0; i < pbl->working_size; i++)
 	{
-		pbl->working_buffer[i] = p_rmem[i];
+		pbl->working_buffer[i] = working_target_ptr_[i];
 	}
 	return DARTT_BL_SUCCESS;
 }
@@ -137,7 +161,7 @@ uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl)
 	2. This method also neatly doubles as a way to validate that the target system is 32bit.
 		In reality we're basically always targeting 32-bit, but it's good to not design yourself into a corner.	
 */
-uint32_t dartt_bl_load_application_start_addr(dartt_bl_t * pbl)
+uint32_t dartt_bl_load_ptr_to_wbuf(dartt_bl_t * pbl, const unsigned char * pointer)
 {
 	if(pbl == NULL)
 	{
@@ -145,16 +169,40 @@ uint32_t dartt_bl_load_application_start_addr(dartt_bl_t * pbl)
 	}
 	if(sizeof(unsigned char *) > sizeof(pbl->working_buffer))
 	{
-		return DARTT_BL_WORKING_BUFFER_OVERRUN;	 //you never know? (lol)
+		return DARTT_BL_WORKING_SIZE_INVALID;	 //you never know? (lol)
 	}
 
 	pbl->working_size = 0;
-	uintptr_t app_start = (uintptr_t)(application_start_addr__);
+	uintptr_t app_start = (uintptr_t)(pointer);
 	for(int i = 0; i < sizeof(unsigned char *); i++)
 	{	
 		uintptr_t shift = i*8;
 		pbl->working_buffer[i] = (app_start & (((uintptr_t)0xFF) << shift)) >> shift;
 		pbl->working_size++;
 	}
+	return DARTT_BL_SUCCESS;
+}
+
+
+/*
+Pass by reference load into a destination pointer
+*/
+uint32_t dartt_bl_load_wbuf_to_ptr(dartt_bl_t * pbl, unsigned char ** p_pointer)
+{
+	if(pbl == NULL || p_pointer == NULL)
+	{
+		return DARTT_BL_NULLPTR;
+	}
+	if(pbl->working_size != sizeof(unsigned char *))	//this is target/implementation specific - flashing tool should always read a pointer into the working buffer first to obtain the target pointer size.
+	{
+		return DARTT_BL_WORKING_SIZE_INVALID;
+	}
+	uintptr_t p = 0;
+	for(int i = 0; i < sizeof(unsigned char *); i++)
+	{
+		int shift = i*8;
+		p |= ((uintptr_t)(pbl->working_buffer[i])) << shift;
+	}
+	(*p_pointer) = (unsigned char *)p;
 	return DARTT_BL_SUCCESS;
 }

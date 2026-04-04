@@ -14,6 +14,7 @@ The bootloader core is implemented in `shared/`. The core bootloader logic and c
 
 This project will have a set number of dedicated bootloader projects that target a specific hardware platform and link to `shared/`. Each bootloader sub-project will be a fully functional & tested bootloader program that compiles to an executable binary for the target platform.
 
+Executable projects will be in `bootloaders/`. 
 
 ## Functions
 
