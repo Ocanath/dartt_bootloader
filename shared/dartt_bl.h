@@ -50,10 +50,11 @@ typedef struct dartt_bl_attributes_t
 */
 typedef struct dartt_bl_t
 {
+	//deferred action registers
 	uint32_t action_flag;	//when this is assigned, perform some enumerated action. Gets written to 0 when done for caller polling purposes.
 	uint32_t action_status;	//dedicated word for return codes - where we check for errors, etc
 
-	//uint32_t working_address;	//The start address of the data to read from or write to flash data storage, when triggered by an action flag
+	//working buffer
 	uint32_t working_size;		//casted to a pointer. the offset from working_address
 	unsigned char working_buffer[64];	//primary working buffer for the bootloader. Can be used for reads or writes
 	
@@ -61,6 +62,7 @@ typedef struct dartt_bl_t
 	uint32_t erase_page;	//page index
 	uint32_t erase_num_pages;	//number of pages starting from the page index to erase
 
+	//attributes and persistent settings
 	dartt_bl_attributes_t attr;	//attributes which must be loaded by the get attributes stub	
 	dartt_bl_persistent_t fds;	//persistent settings for the bootloader, such as module number, a shared secret for decryption, etc. Currently only used for module number
 }dartt_bl_t;
