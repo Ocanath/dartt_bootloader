@@ -11,7 +11,8 @@ uint32_t dartt_bl_load_wbuf_to_ptr(dartt_bl_t * pbl, unsigned char ** p_pointer)
 uint32_t dartt_bl_check_erase_request(dartt_bl_t * pbl);
 uint32_t dartt_bl_check_write_request(dartt_bl_t * pbl);
 uint32_t dartt_bl_load_git_hash(dartt_bl_t * pbl);
-
+uint32_t dartt_bl_update_persistent_settings(dartt_bl_t * pbl);
+uint32_t dartt_bl_load_fds(dartt_bl_t * pbl);
 
 static unsigned char * working_target_ptr_ = NULL;	//assigned using the working buffer on target architecture. 
 
@@ -21,12 +22,6 @@ void dartt_bl_init(dartt_bl_t * pbl)
 	if(pbl == NULL)
 	{
 		return;	//invalid pbl, silent failure
-	}
-	//initialize the filesystem
-	if(dartt_bl_load_fds(pbl) != DARTT_BL_SUCCESS)
-	{
-		pbl->action_status = DARTT_BL_INITIALIZATION_FAILURE;
-		return;
 	}
 	//initialize attributes
 	if(dartt_bl_get_attributes(pbl) != DARTT_BL_SUCCESS)
@@ -42,6 +37,12 @@ void dartt_bl_init(dartt_bl_t * pbl)
 		pbl->action_status = DARTT_BL_INITIALIZATION_FAILURE;
 		return;
 	}
+	//initialize the filesystem. Must load attributes first to know where to find it
+	if(dartt_bl_load_fds(pbl) != DARTT_BL_SUCCESS)
+	{
+		pbl->action_status = DARTT_BL_INITIALIZATION_FAILURE;
+		return;
+	}	
 	working_target_ptr_ = NULL;	//soft reset won't load null, so do it in init. helps with test isolation too so state isn't mutated between tests
 	pbl->action_status = DARTT_BL_INITIALIZED;
 }
@@ -335,5 +336,115 @@ uint32_t dartt_bl_load_git_hash(dartt_bl_t * pbl)
 	{
 		return DARTT_BL_GIT_HASH_NOT_FOUND;
 	}
+	return DARTT_BL_SUCCESS;
+}
+
+
+/**
+ * @brief Get a pointer to the start of the filesystem
+ */
+uintptr_t dartt_bl_get_fds_start_ptr(dartt_bl_t * pbl)
+{
+	if(pbl == NULL)
+	{
+		return 0;
+	}
+	if(pbl->attr.page_size==0)
+	{
+		return 0;
+	}
+	uintptr_t app_start = (uintptr_t)application_start_addr__;
+	uintptr_t page_size = (uintptr_t)pbl->attr.page_size;
+	if(page_size > app_start)
+	{
+		return 0;	//underflow guard, only possible if the app start address is not properly defined (i.e. null, etc)
+	}
+	return app_start - page_size;
+}
+
+/**
+ * @brief Get a pointer to the start of the filesystem
+ * @param pbl Pointer to the bootloader control structure
+ * @return Page index of the filesystem
+ */
+uint32_t dartt_bl_get_fds_start_page(dartt_bl_t * pbl)
+{
+	uintptr_t fds_ptr = dartt_bl_get_fds_start_ptr(pbl);
+	if(fds_ptr != 0)
+	{
+		return (size_t)(fds_ptr - (uintptr_t)flash_base_addr__)/(size_t)pbl->attr.page_size;	//page size is checked by start so safe
+	}
+	return 0;	//return invalid page index if something is wrong
+}
+
+/**
+ * @brief Load persistent settings from non-volatile storage into @c pbl->fds. Nonvolatile storage is always one page, reserved at the end of the bootloader section.
+ * @param pbl Pointer to bootloader control structure.
+ * @return @c DARTT_BL_SUCCESS or error code.
+ */
+
+uint32_t dartt_bl_load_fds(dartt_bl_t * pbl)
+{
+	if(pbl == NULL)
+	{
+		return DARTT_BL_NULLPTR;
+	}
+
+	uintptr_t p_fds = dartt_bl_get_fds_start_ptr(pbl);
+	if(p_fds == 0)
+	{
+		return DARTT_BL_FDS_LOAD_FAILED;
+	}
+	if(p_fds + (uintptr_t)(sizeof(dartt_bl_persistent_t)) >= application_start_addr__)
+	{
+		return DARTT_BL_FDS_LOAD_FAILED;
+	}
+
+	unsigned char * p_settings = (unsigned char *)(&pbl->fds);
+	for(size_t i = 0; i < sizeof(dartt_bl_persistent_t); i++)
+	{
+		p_settings[i] = ((unsigned char *)p_fds)[i];
+	}
+
+	return DARTT_BL_SUCCESS;
+}
+
+
+
+/**
+ * @brief Write @c pbl->fds to non-volatile storage.
+ * @param pbl Pointer to bootloader control structure.
+ * @return @c DARTT_BL_SUCCESS or error code.
+ */
+uint32_t dartt_bl_update_persistent_settings(dartt_bl_t * pbl)
+{
+	if(pbl == NULL)
+	{
+		return DARTT_BL_NULLPTR;
+	}
+	if(pbl->attr.write_size == 0)	//div by zero guard
+	{
+		return DARTT_BL_WRITE_SIZE_UNINITALIZED;
+	}
+	/*setup area*/
+	//
+
+	pbl->erase_page = dartt_bl_get_fds_start_page(pbl);
+	pbl->erase_num_pages = 1;
+	uint32_t rc = dartt_bl_flash_erase(pbl);
+	if(rc != DARTT_BL_SUCCESS)
+	{
+		return rc;
+	}
+		
+	size_t num_writes = sizeof(dartt_bl_persistent_t)/((size_t)pbl->attr.write_size);
+	size_t zeropad_size = sizeof(dartt_bl_persistent_t) % ((size_t)pbl->attr.write_size);	//if unaligned, must pad the last write with zeros
+
+	rc = dartt_bl_flash_write(pbl);
+
+
+	/*restore area*/
+	//
+
 	return DARTT_BL_SUCCESS;
 }

@@ -5,20 +5,17 @@ unsigned char fake_application_area[0x2000] = {};
 const unsigned char * application_start_addr__ = &fake_application_area[0x400];	//must define this
 const unsigned char * flash_base_addr__ = &fake_application_area[0];
 
-uint32_t dartt_bl_load_fds(dartt_bl_t * pbl)
+
+/*
+Test scoped helper
+*/
+void set_application_size(dartt_bl_t * pbl)
 {
-	if(pbl == NULL)
-	{
-		return DARTT_BL_NULLPTR;
-	}
-	TEST_ASSERT_LESS_THAN(0xFFFFFFFF, sizeof(fake_application_area));
-	// pbl->fds.application_size = sizeof(fake_application_area);
 	uintptr_t flash_base = (uintptr_t)flash_base_addr__;
 	uintptr_t app_start = (uintptr_t)application_start_addr__;
 	uintptr_t flash_end = flash_base + (uintptr_t)sizeof(fake_application_area);
 	pbl->fds.application_size = flash_end - app_start;
-	
-	return DARTT_BL_SUCCESS;
+
 }
 
 uint32_t dartt_bl_get_attributes(dartt_bl_t * pbl)
@@ -29,10 +26,6 @@ uint32_t dartt_bl_get_attributes(dartt_bl_t * pbl)
 	return DARTT_BL_SUCCESS;
 }
 
-uint32_t dartt_bl_update_persistent_settings(dartt_bl_t * pbl)
-{
-	return DARTT_BL_SUCCESS;
-}
 
 uint32_t dartt_bl_handle_comms(dartt_bl_t * pbl)
 {

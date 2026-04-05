@@ -15,26 +15,12 @@ extern const unsigned char * application_start_addr__;
 extern const unsigned char * flash_base_addr__;
 
 /**
- * @brief Load persistent settings from non-volatile storage into @c pbl->fds.
- * @param pbl Pointer to bootloader control structure.
- * @return @c DARTT_BL_SUCCESS or error code.
- */
-uint32_t dartt_bl_load_fds(dartt_bl_t * pbl);
-
-/**
  * @brief Populate @c pbl->attr with target flash attributes.
  * @param pbl Pointer to bootloader control structure.
  * @return @c DARTT_BL_SUCCESS or error code.
  * @note Must set nonzero values for both @c attr.page_size and @c attr.write_size.
  */
 uint32_t dartt_bl_get_attributes(dartt_bl_t * pbl);
-
-/**
- * @brief Write @c pbl->fds to non-volatile storage.
- * @param pbl Pointer to bootloader control structure.
- * @return @c DARTT_BL_SUCCESS or error code.
- */
-uint32_t dartt_bl_update_persistent_settings(dartt_bl_t * pbl);
 
 /**
  * @brief Poll all active comm interfaces and update @c pbl from any received DARTT messages.
