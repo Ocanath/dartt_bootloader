@@ -235,6 +235,14 @@ uint32_t dartt_bl_check_write_request(dartt_bl_t * pbl)
 	{
 		return DARTT_BL_NULLPTR;
 	}
+	if(working_target_ptr_ == NULL)
+	{
+		return DARTT_BL_NULLPTR;
+	}
+	if(pbl->working_size == 0)
+	{
+		return DARTT_BL_WORKING_SIZE_INVALID;
+	}
 	if(working_target_ptr_ < application_start_addr__)
 	{
 		return DARTT_BL_WRITE_BLOCKED;
