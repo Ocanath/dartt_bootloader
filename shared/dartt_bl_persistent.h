@@ -2,6 +2,10 @@
 #define DARTT_BL_PERSISTENT_H
 #include <stdint.h>
 
+/*
+	TODO: reserve exactly one page at the top of the bootloader region, just under the application start, for the bootloader persistent settings
+*/
+
 /**
  * @brief Persistent bootloader settings stored in non-volatile memory.
  * @note Layout must remain stable across firmware versions. Any structural change requires a migration strategy.
