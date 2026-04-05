@@ -41,7 +41,8 @@ enum {
 typedef struct dartt_bl_attributes_t
 {
 	uint32_t page_size;  /**< Erasable page size in bytes. */
-	uint32_t write_size; /**< Minimum write granularity in bytes. Must be a power of 2. */
+	uint32_t num_pages;	/**<  Number of pages on target */
+	uint32_t write_size; /**< Minimum flash write granularity in bytes. Must be a power of 2. */
 } dartt_bl_attributes_t;
 
 
