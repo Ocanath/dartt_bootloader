@@ -25,7 +25,10 @@ enum {
 	DARTT_BL_APPLICATION_RANGE_INVALID = -3,
 	DARTT_BL_INVALID_ACTION_REQUEST = -4,
 	DARTT_BL_BAD_READ_REQUEST = -5,
-	DARTT_BL_ERROR_POINTER_OVERRUN = -6
+	DARTT_BL_ERROR_POINTER_OVERRUN = -6,
+	DARTT_BL_ERASE_FAILED_INVALID_PAGE_SIZE = -7,
+	DARTT_BL_ERASE_FAILED_INVALID_NUMPAGES = -8,
+	DARTT_BL_ERASE_BLOCKED = -9
 };
 
 /*
@@ -38,6 +41,7 @@ typedef struct dartt_bl_attributes_t
 	uint32_t write_size;
 }dartt_bl_attributes_t;
 
+
 /*
 	Definition of the control structure.
 	This is memory mapped to dartt and is the primary communication/control surface for the bootloader
@@ -45,19 +49,17 @@ typedef struct dartt_bl_attributes_t
 typedef struct dartt_bl_t
 {
 	uint32_t action_flag;	//when this is assigned, perform some enumerated action. Gets written to 0 when done for caller polling purposes.
-	
 	uint32_t action_status;	//dedicated word for return codes - where we check for errors, etc
-
-	//the bootloader will have to protect itself from erasure using some mechanism - either find its size on startup with some process or have it compiled in via scripting
-	uint32_t erase_page;
-	uint32_t erase_num_pages;
 
 	//uint32_t working_address;	//The start address of the data to read from or write to flash data storage, when triggered by an action flag
 	uint32_t working_size;		//casted to a pointer. the offset from working_address
 	unsigned char working_buffer[64];	//primary working buffer for the bootloader. Can be used for reads or writes
 	
-	dartt_bl_attributes_t attr;	//attributes which must be loaded by the get attributes stub
-	
+	//Erasure interface
+	uint32_t erase_page;	//page index
+	uint32_t erase_num_pages;	//number of pages starting from the page index to erase
+
+	dartt_bl_attributes_t attr;	//attributes which must be loaded by the get attributes stub	
 	dartt_bl_persistent_t fds;	//persistent settings for the bootloader, such as module number, a shared secret for decryption, etc. Currently only used for module number
 }dartt_bl_t;
 
@@ -72,5 +74,8 @@ uint32_t dartt_bl_load_ptr_to_wbuf(dartt_bl_t * pbl, const unsigned char * point
 
 /*Helper function to working buffer into the load a pointer. Can be used by both flashing tool and bootloader*/
 uint32_t dartt_bl_load_wbuf_to_ptr(dartt_bl_t * pbl, unsigned char ** p_pointer);
+
+/*Helper function to retrive the page address based on the settings in the bootloader control. Useful for target implementer as well*/
+uintptr_t dartt_bl_get_page_addr(dartt_bl_t * pbl);
 
 #endif

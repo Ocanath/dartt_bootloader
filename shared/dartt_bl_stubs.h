@@ -5,7 +5,8 @@
 
 /*Implementation-specific stubs. All of these functions must have an application defined implementation for the bootloader to function*/
 
-extern const unsigned char * application_start_addr__;	//must be defined by caller, a compile time constant
+extern const unsigned char * application_start_addr__;	//must be defined by target implementation, a compile time constant
+extern const unsigned char * flash_base_addr__;	//must be defined by target implementation, a compile time constant
 
 /*
 This must load the filesystem from persistent storage.

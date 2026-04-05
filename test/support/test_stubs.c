@@ -2,7 +2,8 @@
 #include "unity.h"
 
 unsigned char fake_application_area[0x2000] = {};	
-const unsigned char * application_start_addr__ = fake_application_area;	//must define this
+const unsigned char * application_start_addr__ = &fake_application_area[0x400];	//must define this
+const unsigned char * flash_base_addr__ = &fake_application_area[0];
 
 uint32_t dartt_bl_load_fds(dartt_bl_t * pbl)
 {
@@ -18,6 +19,8 @@ uint32_t dartt_bl_load_fds(dartt_bl_t * pbl)
 
 uint32_t dartt_bl_get_attributes(dartt_bl_t * pbl)
 {
+	pbl->attr.page_size = 0x100;
+	pbl->attr.write_size = 8;
 	return DARTT_BL_SUCCESS;
 }
 
@@ -48,8 +51,15 @@ uint32_t dartt_bl_flash_write(dartt_bl_t * pbl)
 }
 
 
+/*emulate erasure*/
 uint32_t dartt_bl_flash_erase(dartt_bl_t * pbl)
 {
+	uintptr_t erase_ptr = ((uintptr_t)pbl->erase_page) * ((uintptr_t)pbl->attr.page_size);
+	size_t erase_range = ((size_t)pbl->erase_num_pages)*((size_t)pbl->attr.page_size);
+	for(size_t i = 0; i < erase_range; i++)
+	{
+		fake_application_area[i] = 0xFF;
+	}
 	return DARTT_BL_SUCCESS;
 }
 

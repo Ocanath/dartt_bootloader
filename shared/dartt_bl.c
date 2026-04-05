@@ -7,6 +7,7 @@ uint32_t dartt_bl_read_mem(dartt_bl_t * pbl);
 uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl);
 uint32_t dartt_bl_load_ptr_to_wbuf(dartt_bl_t * pbl, const unsigned char * pointer);	//helper function for loading a pointer INTO the working buffer
 uint32_t dartt_bl_load_wbuf_to_ptr(dartt_bl_t * pbl, unsigned char ** p_pointer);
+uint32_t dartt_bl_check_erase_request(dartt_bl_t * pbl);
 
 static unsigned char * working_target_ptr_ = NULL;	//assigned using the working buffer on target architecture. 
 
@@ -61,7 +62,11 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 			}
 			case ERASE_PAGES:
 			{
-				pbl->action_status = dartt_bl_flash_erase(pbl);
+				pbl->action_status = dartt_bl_check_erase_request(pbl);
+				if(pbl->action_status == DARTT_BL_SUCCESS)
+				{
+					pbl->action_status = dartt_bl_flash_erase(pbl);
+				}
 				break;
 			}
 			case GET_CRC32:
@@ -207,5 +212,37 @@ uint32_t dartt_bl_load_wbuf_to_ptr(dartt_bl_t * pbl, unsigned char ** p_pointer)
 		p |= ((uintptr_t)(pbl->working_buffer[i])) << shift;
 	}
 	(*p_pointer) = (unsigned char *)p;
+	return DARTT_BL_SUCCESS;
+}
+
+uintptr_t dartt_bl_get_page_addr(dartt_bl_t * pbl)
+{
+	if(pbl == NULL)
+	{
+		return DARTT_BL_NULLPTR;
+	}
+	return ((uintptr_t)flash_base_addr__) + ((uintptr_t)pbl->attr.page_size) * ((uintptr_t)pbl->erase_page);
+}
+
+uint32_t dartt_bl_check_erase_request(dartt_bl_t * pbl)
+{
+	if(pbl == NULL)
+	{
+		return DARTT_BL_NULLPTR;
+	}
+	if(pbl->attr.page_size == 0)
+	{
+		return DARTT_BL_ERASE_FAILED_INVALID_PAGE_SIZE;
+	}
+	if(pbl->erase_num_pages == 0)
+	{
+		return DARTT_BL_ERASE_FAILED_INVALID_NUMPAGES;
+	}
+	uintptr_t erase_addr = dartt_bl_get_page_addr(pbl);
+	uintptr_t app_start = (uintptr_t)(application_start_addr__);
+	if(erase_addr < app_start)
+	{
+		return DARTT_BL_ERASE_BLOCKED;
+	}
 	return DARTT_BL_SUCCESS;
 }

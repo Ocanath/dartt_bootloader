@@ -73,6 +73,10 @@ Attempted writes to illegal memory-mapped regions can result in a hardfault. The
 
 Erasure works differently. The page attributes must be read from `.page_size`. The flashing tool must set `.erase_page` and `.erase_num_pages` before running the deferred erase operation via `ERASE_PAGES`. This calls a stub which must be implemented on each specific target.
 
+Erasure is explicitly forbidden for the bootloader memory region, same as with writes. This is enforced by the event loop - request validity does not have to be enforced by the stub implementation, (although redundancy is not necessarily a bad thing).
+
+**Note:** Page indexing is absolute on the target memory.
+
 ### Verification
 
 The deferred `GET_CRC32` action calculates a crc32 value from `application_start_addr__` to `application_start_addr__ + .application_size`. The flashing tool must set `.application_size` and save for proper startup flash validation. 
