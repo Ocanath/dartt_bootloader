@@ -2,6 +2,7 @@
 #include "checksum.h"
 #include "dartt_bl.h"
 #include "dartt_bl_stubs.h"
+#include "version.h"
 #include "unity.h"
 
 extern unsigned char fake_application_area[0x2000];
@@ -349,4 +350,21 @@ void test_getcrc32(void)
 	TEST_ASSERT_EQUAL(NO_ACTION,bootloader_ctl.action_flag);
 	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
 	TEST_ASSERT_NOT_EQUAL(0, bootloader_ctl.fds.application_crc32);	//assume correct crc32 calculation from dartt tests
+}
+
+void test_get_version_hash(void)
+{
+	dartt_bl_t bootloader_ctl = {0};
+	dartt_bl_init(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
+
+	TEST_ASSERT_NOT_EQUAL(0, sizeof(firmware_version));
+	bootloader_ctl.action_flag = GET_VERSION_HASH;
+	dartt_bl_event_handler(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(NO_ACTION,bootloader_ctl.action_flag);
+	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
+
+	TEST_ASSERT_EQUAL_UINT8_ARRAY((uint8_t*)firmware_version, (uint8_t*)bootloader_ctl.working_buffer, sizeof(firmware_version));
+	TEST_ASSERT_EQUAL(sizeof(firmware_version), bootloader_ctl.working_size);
+
 }
