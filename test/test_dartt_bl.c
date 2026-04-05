@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "checksum.h"
 #include "dartt_bl.h"
 #include "dartt_bl_stubs.h"
@@ -145,6 +146,47 @@ void test_read_buffer(void)
 	}
 }
 
+void test_erase(void)
+{
+	dartt_bl_t bootloader_ctl = {0};
+	dartt_bl_init(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
+
+	TEST_ASSERT_NOT_EQUAL(0, bootloader_ctl.attr.page_size);
+
+	bootloader_ctl.action_flag = ERASE_PAGES;
+	dartt_bl_event_handler(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+	TEST_ASSERT_EQUAL(DARTT_BL_ERASE_FAILED_INVALID_NUMPAGES, (int32_t)bootloader_ctl.action_status);
+	
+	bootloader_ctl.erase_num_pages = 1;
+	bootloader_ctl.erase_page = 0;
+	bootloader_ctl.action_flag = ERASE_PAGES;
+	dartt_bl_event_handler(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+	TEST_ASSERT_EQUAL(DARTT_BL_ERASE_BLOCKED, (int32_t)bootloader_ctl.action_status);
+
+	//init the filesystem
+	for(size_t i = 0; i < sizeof(fake_application_area); i++)
+	{
+		fake_application_area[i] = i+1;
+	}
+
+	bootloader_ctl.erase_num_pages = 1;
+	bootloader_ctl.erase_page = 4;
+	bootloader_ctl.action_flag = ERASE_PAGES;
+	dartt_bl_event_handler(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
+	unsigned char * erase_ptr = (unsigned char *)dartt_bl_get_page_addr(&bootloader_ctl);
+	
+	TEST_ASSERT_EQUAL(application_start_addr__ , erase_ptr);
+	for(size_t i = 0; i < bootloader_ctl.attr.page_size; i++)
+	{
+		TEST_ASSERT_EQUAL(0xFF, application_start_addr__[i]);
+	}
+	
+}
 
 void test_getcrc32(void)
 {

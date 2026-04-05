@@ -54,11 +54,11 @@ uint32_t dartt_bl_flash_write(dartt_bl_t * pbl)
 /*emulate erasure*/
 uint32_t dartt_bl_flash_erase(dartt_bl_t * pbl)
 {
-	uintptr_t erase_ptr = ((uintptr_t)pbl->erase_page) * ((uintptr_t)pbl->attr.page_size);
+	unsigned char * erase_ptr = (unsigned char *)dartt_bl_get_page_addr(pbl);
 	size_t erase_range = ((size_t)pbl->erase_num_pages)*((size_t)pbl->attr.page_size);
 	for(size_t i = 0; i < erase_range; i++)
 	{
-		fake_application_area[i] = 0xFF;
+		erase_ptr[i] = 0xFF;
 	}
 	return DARTT_BL_SUCCESS;
 }
