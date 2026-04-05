@@ -65,22 +65,46 @@ typedef struct dartt_bl_t
 	dartt_bl_persistent_t fds;	//persistent settings for the bootloader, such as module number, a shared secret for decryption, etc. Currently only used for module number
 }dartt_bl_t;
 
-/*Initialize the bootloader. calls unimplemented helper functions*/
+/**
+ * @brief Initialize the bootloader. Loads persistent settings and target attributes.
+ * @param pbl Pointer to bootloader control structure.
+ * @note Sets @c action_status to @c DARTT_BL_INITIALIZED on success, @c DARTT_BL_INITIALIZATION_FAILURE on error.
+ */
 void dartt_bl_init(dartt_bl_t * pbl);
 
-/*main event handler. */
+/**
+ * @brief Main event handler. Call in a loop. Processes incoming comms and dispatches deferred actions.
+ * @param pbl Pointer to bootloader control structure.
+ */
 void dartt_bl_event_handler(dartt_bl_t * pbl);
 
-/*Helper function to load a pointer into the working buffer. Can be used by both flashing tool and bootloader*/
-uint32_t dartt_bl_load_ptr_to_wbuf(dartt_bl_t * pbl, const unsigned char * pointer);	//helper function for loading a pointer INTO the working buffer
+/**
+ * @brief Serialize a pointer address into the working buffer (little-endian). Sets @c working_size to pointer width.
+ * @param pbl     Pointer to bootloader control structure.
+ * @param pointer Address to serialize.
+ * @return @c DARTT_BL_SUCCESS or error code.
+ */
+uint32_t dartt_bl_load_ptr_to_wbuf(dartt_bl_t * pbl, const unsigned char * pointer);
 
-/*Helper function to working buffer into the load a pointer. Can be used by both flashing tool and bootloader*/
+/**
+ * @brief Deserialize a pointer address from the working buffer (little-endian).
+ * @param pbl       Pointer to bootloader control structure.
+ * @param p_pointer Output pointer. Set to the deserialized address on success.
+ * @return @c DARTT_BL_SUCCESS or error code. Fails if @c working_size does not equal pointer width.
+ */
 uint32_t dartt_bl_load_wbuf_to_ptr(dartt_bl_t * pbl, unsigned char ** p_pointer);
 
-/*Helper function to retrieve the current working target pointer. Useful for target implementer (e.g. flash write stub)*/
+/**
+ * @brief Returns the current working target pointer. For use by flash write stub implementations.
+ * @return Current value of @c working_target_ptr_.
+ */
 unsigned char * dartt_bl_get_working_ptr(void);
 
-/*Helper function to retrive the page address based on the settings in the bootloader control. Useful for target implementer as well*/
+/**
+ * @brief Compute the byte address of the requested erase page.
+ * @param pbl Pointer to bootloader control structure.
+ * @return Byte address of @c pbl->erase_page, or @c DARTT_BL_NULLPTR if @c pbl is NULL.
+ */
 uintptr_t dartt_bl_get_page_addr(dartt_bl_t * pbl);
 
 #endif

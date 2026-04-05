@@ -12,7 +12,7 @@ uint32_t dartt_bl_check_write_request(dartt_bl_t * pbl);
 
 static unsigned char * working_target_ptr_ = NULL;	//assigned using the working buffer on target architecture. 
 
-/*Initialize the bootloader. calls unimplemented helper functions*/
+/** @brief Initialize the bootloader. See dartt_bl.h for full documentation. */
 void dartt_bl_init(dartt_bl_t * pbl)
 {
 	if(pbl == NULL)
@@ -41,7 +41,7 @@ void dartt_bl_init(dartt_bl_t * pbl)
 }
 
 
-/*Main event handler. called in a loop.*/
+/** @brief Main event handler. See dartt_bl.h for full documentation. */
 void dartt_bl_event_handler(dartt_bl_t * pbl)
 {
 	dartt_bl_handle_comms(pbl);	//update pbl struct from comm interfaces
@@ -119,17 +119,11 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 }
 
 
-/*
-	Read requested target memory range into the working buffer.
-
-	Assumes flash is always memory mapped. If your system runs from external
-	flash memory, you will need to externally define this function with the appropriate
-	read operations, or else drop in your own.
-
-	Note - this function can, and likely will, result in hardfaults, frequently. The caller 
-	should take care to check for initializatio status codes after calling this, erase, write, 
-	or crc32 functions.
-*/
+/**
+ * @brief Read @c working_size bytes from @c working_target_ptr_ into @c working_buffer.
+ * @note Assumes memory-mapped flash. May trigger a hardfault on invalid addresses — caller
+ *       should check @c action_status for @c DARTT_BL_INITIALIZED after any potentially unsafe op.
+ */
 uint32_t dartt_bl_read_mem(dartt_bl_t * pbl)
 {
 	if(pbl == NULL)
@@ -155,9 +149,10 @@ uint32_t dartt_bl_read_mem(dartt_bl_t * pbl)
 	return DARTT_BL_SUCCESS;
 }
 
-/*
-	Loads the crc32 register for verification.
-*/
+/**
+ * @brief Compute CRC32 of the application image and store in @c pbl->fds.application_crc32.
+ * @note Uses @c application_start_addr__ and @c pbl->fds.application_size as the range.
+ */
 uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl)
 {
 	if(pbl == NULL)
@@ -172,13 +167,7 @@ uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl)
 	return DARTT_BL_SUCCESS;
 }
 
-/*
-	Fulfill the action of loading the application start pointer into the working buffer. This is used for two purposes:
-	1. Validity check for the flashing tool. If the blob we're trying to flash does not have a matching start address, 
-		that's an exit-able error - it means the requested operation is impossible.
-	2. This method also neatly doubles as a way to validate that the target system is 32bit.
-		In reality we're basically always targeting 32-bit, but it's good to not design yourself into a corner.	
-*/
+/** @brief Serialize a pointer into the working buffer. See dartt_bl.h for full documentation. */
 uint32_t dartt_bl_load_ptr_to_wbuf(dartt_bl_t * pbl, const unsigned char * pointer)
 {
 	if(pbl == NULL)
@@ -202,9 +191,7 @@ uint32_t dartt_bl_load_ptr_to_wbuf(dartt_bl_t * pbl, const unsigned char * point
 }
 
 
-/*
-Pass by reference load into a destination pointer
-*/
+/** @brief Deserialize a pointer from the working buffer. See dartt_bl.h for full documentation. */
 uint32_t dartt_bl_load_wbuf_to_ptr(dartt_bl_t * pbl, unsigned char ** p_pointer)
 {
 	if(pbl == NULL || p_pointer == NULL)
