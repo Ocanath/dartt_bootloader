@@ -20,6 +20,7 @@ uint32_t dartt_bl_load_fds(dartt_bl_t * pbl)
 uint32_t dartt_bl_get_attributes(dartt_bl_t * pbl)
 {
 	pbl->attr.page_size = 0x100;
+	pbl->attr.num_pages = sizeof(fake_application_area)/((size_t)pbl->attr.page_size);
 	pbl->attr.write_size = 8;
 	return DARTT_BL_SUCCESS;
 }

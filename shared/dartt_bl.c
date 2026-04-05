@@ -33,7 +33,10 @@ void dartt_bl_init(dartt_bl_t * pbl)
 		pbl->action_status = DARTT_BL_INITIALIZATION_FAILURE;	//if you ever see this code, panic
 		return;
 	}
-	if(pbl->attr.page_size == 0 || pbl->attr.write_size == 0)
+	if(pbl->attr.page_size == 0 || 
+		pbl->attr.write_size == 0 ||
+		pbl->attr.num_pages == 0
+	)
 	{
 		pbl->action_status = DARTT_BL_INITIALIZATION_FAILURE;
 		return;
