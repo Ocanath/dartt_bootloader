@@ -33,41 +33,33 @@ enum {
 	DARTT_BL_WRITE_SIZE_UNINITALIZED = -11
 };
 
-/*
-Container for target attributes
-*/
+/**
+ * @brief Target flash attributes. Populated by @c dartt_bl_get_attributes() on init.
+ */
 typedef struct dartt_bl_attributes_t
 {
-	//read-only section (read only not enforced as of )
-	uint32_t page_size;	//number of bytes
-	uint32_t write_size;
-}dartt_bl_attributes_t;
+	uint32_t page_size;  /**< Erasable page size in bytes. */
+	uint32_t write_size; /**< Minimum write granularity in bytes. Must be a power of 2. */
+} dartt_bl_attributes_t;
 
 
-/*
-	Definition of the control structure.
-	This is memory mapped to dartt and is the primary communication/control surface for the bootloader
-*/
+/**
+ * @brief Primary bootloader control structure. Memory-mapped as the DARTT register interface.
+ */
 typedef struct dartt_bl_t
 {
-	//deferred action registers
-	uint32_t action_flag;	//when this is assigned, perform some enumerated action. Gets written to 0 when done for caller polling purposes.
-	uint32_t action_status;	//dedicated word for return codes - where we check for errors, etc
+	uint32_t action_flag;             /**< Write an action enum to dispatch a deferred operation. Cleared to @c NO_ACTION on completion. */
+	uint32_t action_status;           /**< Return code of the most recently completed action. Valid only when @c action_flag is @c NO_ACTION. */
 
-	//working buffer
-	uint32_t working_size;		//casted to a pointer. the offset from working_address
-	unsigned char working_buffer[64];	//primary working buffer for the bootloader. Can be used for reads or writes
-	
-	//Erasure interface
-	uint32_t erase_page;	//page index
-	uint32_t erase_num_pages;	//number of pages starting from the page index to erase
+	uint32_t working_size;            /**< Byte count for read/write operations. Must be a nonzero multiple of @c attr.write_size for writes. */
+	unsigned char working_buffer[64]; /**< Data buffer for read/write operations. */
 
-	//attributes 
-	dartt_bl_attributes_t attr;	//attributes which must be loaded by the get attributes stub	
-	
-	//persistent settings
-	dartt_bl_persistent_t fds;	//persistent settings for the bootloader, such as module number, a shared secret for decryption, etc. Currently only used for module number
-}dartt_bl_t;
+	uint32_t erase_page;              /**< Absolute page index (from @c flash_base_addr__) to erase. */
+	uint32_t erase_num_pages;         /**< Number of pages to erase starting from @c erase_page. */
+
+	dartt_bl_attributes_t attr;       /**< Target flash attributes. Populated by @c dartt_bl_get_attributes(). Read-only at runtime. */
+	dartt_bl_persistent_t fds;        /**< Persistent bootloader settings. Loaded from NVM on init. */
+} dartt_bl_t;
 
 /**
  * @brief Initialize the bootloader. Loads persistent settings and target attributes.
