@@ -77,6 +77,9 @@ uint32_t dartt_bl_load_ptr_to_wbuf(dartt_bl_t * pbl, const unsigned char * point
 /*Helper function to working buffer into the load a pointer. Can be used by both flashing tool and bootloader*/
 uint32_t dartt_bl_load_wbuf_to_ptr(dartt_bl_t * pbl, unsigned char ** p_pointer);
 
+/*Helper function to retrieve the current working target pointer. Useful for target implementer (e.g. flash write stub)*/
+unsigned char * dartt_bl_get_working_ptr(void);
+
 /*Helper function to retrive the page address based on the settings in the bootloader control. Useful for target implementer as well*/
 uintptr_t dartt_bl_get_page_addr(dartt_bl_t * pbl);
 

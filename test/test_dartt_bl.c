@@ -188,6 +188,94 @@ void test_erase(void)
 	
 }
 
+void test_write_buffer(void)
+{
+	dartt_bl_t bootloader_ctl = {0};
+	dartt_bl_init(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
+
+	{//test case 1: null working pointer
+		bootloader_ctl.working_size = 8;
+		bootloader_ctl.action_flag = WRITE_BUFFER;
+		dartt_bl_event_handler(&bootloader_ctl);
+		TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+		TEST_ASSERT_EQUAL(DARTT_BL_NULLPTR, (int32_t)bootloader_ctl.action_status);
+	}
+
+	{//set valid working pointer for remaining tests
+		dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, application_start_addr__);
+		bootloader_ctl.action_flag = SET_WORKING_ADDR;
+		dartt_bl_event_handler(&bootloader_ctl);
+		TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
+	}
+
+	{//test case 2: working_size == 0
+		bootloader_ctl.working_size = 0;
+		bootloader_ctl.action_flag = WRITE_BUFFER;
+		dartt_bl_event_handler(&bootloader_ctl);
+		TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+		TEST_ASSERT_EQUAL(DARTT_BL_WORKING_SIZE_INVALID, (int32_t)bootloader_ctl.action_status);
+	}
+
+	{//test case 3: working_size > buffer
+		bootloader_ctl.working_size = sizeof(bootloader_ctl.working_buffer) + 1;
+		bootloader_ctl.action_flag = WRITE_BUFFER;
+		dartt_bl_event_handler(&bootloader_ctl);
+		TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+		TEST_ASSERT_EQUAL(DARTT_BL_WORKING_SIZE_INVALID, (int32_t)bootloader_ctl.action_status);
+	}
+
+	{//test case 4: write_size uninitialized
+		bootloader_ctl.attr.write_size = 0;
+		bootloader_ctl.working_size = 8;
+		bootloader_ctl.action_flag = WRITE_BUFFER;
+		dartt_bl_event_handler(&bootloader_ctl);
+		TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+		TEST_ASSERT_EQUAL(DARTT_BL_WRITE_SIZE_UNINITALIZED, (int32_t)bootloader_ctl.action_status);
+		bootloader_ctl.attr.write_size = 8;
+	}
+
+	{//test case 5: write to bootloader region (blocked)
+		dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, flash_base_addr__);
+		bootloader_ctl.action_flag = SET_WORKING_ADDR;
+		dartt_bl_event_handler(&bootloader_ctl);
+		TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
+
+		bootloader_ctl.working_size = 8;
+		bootloader_ctl.action_flag = WRITE_BUFFER;
+		dartt_bl_event_handler(&bootloader_ctl);
+		TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+		TEST_ASSERT_EQUAL(DARTT_BL_WRITE_BLOCKED, (int32_t)bootloader_ctl.action_status);
+	}
+
+	{//test case 6: valid write
+		for(size_t i = 0; i < sizeof(fake_application_area); i++)
+		{
+			fake_application_area[i] = 0xFF;
+		}
+
+		dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, &fake_application_area[0x900]);
+		bootloader_ctl.action_flag = SET_WORKING_ADDR;
+		dartt_bl_event_handler(&bootloader_ctl);
+		TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
+
+		bootloader_ctl.working_size = 8;
+		for(int i = 0; i < 8; i++)
+		{
+			bootloader_ctl.working_buffer[i] = 0xAA + i;
+		}
+
+		bootloader_ctl.action_flag = WRITE_BUFFER;
+		dartt_bl_event_handler(&bootloader_ctl);
+		TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+		TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
+		for(int i = 0; i < 8; i++)
+		{
+			TEST_ASSERT_EQUAL(0xAA + i, fake_application_area[0x900 + i]);
+		}
+	}
+}
+
 void test_getcrc32(void)
 {
 	dartt_bl_t bootloader_ctl = {0};

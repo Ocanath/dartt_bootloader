@@ -45,8 +45,14 @@ uint32_t dartt_bl_start_application(dartt_bl_t * pbl)
 }
 
 
+/*emulate write*/
 uint32_t dartt_bl_flash_write(dartt_bl_t * pbl)
 {
+	unsigned char * write_ptr = dartt_bl_get_working_ptr();
+	for(size_t i = 0; i < pbl->working_size; i++)
+	{
+		write_ptr[i] = pbl->working_buffer[i];
+	}
 	return DARTT_BL_SUCCESS;
 }
 

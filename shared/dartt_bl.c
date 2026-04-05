@@ -220,6 +220,11 @@ uint32_t dartt_bl_load_wbuf_to_ptr(dartt_bl_t * pbl, unsigned char ** p_pointer)
 	return DARTT_BL_SUCCESS;
 }
 
+unsigned char * dartt_bl_get_working_ptr(void)
+{
+	return working_target_ptr_;
+}
+
 uintptr_t dartt_bl_get_page_addr(dartt_bl_t * pbl)
 {
 	if(pbl == NULL)
@@ -239,7 +244,7 @@ uint32_t dartt_bl_check_write_request(dartt_bl_t * pbl)
 	{
 		return DARTT_BL_NULLPTR;
 	}
-	if(pbl->working_size == 0)
+	if(pbl->working_size == 0 || pbl->working_size > sizeof(pbl->working_buffer) )
 	{
 		return DARTT_BL_WORKING_SIZE_INVALID;
 	}
