@@ -31,6 +31,11 @@ void dartt_bl_init(dartt_bl_t * pbl)
 		pbl->action_status = DARTT_BL_INITIALIZATION_FAILURE;	//if you ever see this code, panic
 		return;
 	}
+	if(pbl->attr.page_size == 0 || pbl->attr.write_size == 0)
+	{
+		pbl->action_status = DARTT_BL_INITIALIZATION_FAILURE;
+		return;
+	}
 	working_target_ptr_ = NULL;	//soft reset won't load null, so do it in init. helps with test isolation too so state isn't mutated between tests
 	pbl->action_status = DARTT_BL_INITIALIZED;
 }
@@ -244,13 +249,15 @@ uint32_t dartt_bl_check_write_request(dartt_bl_t * pbl)
 	{
 		return DARTT_BL_NULLPTR;
 	}
-	if(pbl->working_size == 0 || pbl->working_size > sizeof(pbl->working_buffer) )
-	{
-		return DARTT_BL_WORKING_SIZE_INVALID;
-	}
-	if(pbl->attr.write_size == 0)
+	if(pbl->attr.write_size == 0)	//redundant with init checks but good to validate anyway
 	{
 		return DARTT_BL_WRITE_SIZE_UNINITALIZED;
+	}
+	if(pbl->working_size == 0 || 
+		pbl->working_size > sizeof(pbl->working_buffer) ||
+		pbl->working_size % pbl->attr.write_size != 0)
+	{
+		return DARTT_BL_WORKING_SIZE_INVALID;
 	}
 	if(working_target_ptr_ < application_start_addr__)
 	{
