@@ -10,6 +10,7 @@ uint32_t dartt_bl_load_ptr_to_wbuf(dartt_bl_t * pbl, const unsigned char * point
 uint32_t dartt_bl_load_wbuf_to_ptr(dartt_bl_t * pbl, unsigned char ** p_pointer);
 uint32_t dartt_bl_check_erase_request(dartt_bl_t * pbl);
 uint32_t dartt_bl_check_write_request(dartt_bl_t * pbl);
+uint32_t dartt_bl_load_git_hash(dartt_bl_t * pbl);
 
 static unsigned char * working_target_ptr_ = NULL;	//assigned using the working buffer on target architecture. 
 
@@ -92,6 +93,7 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 			}
 			case GET_VERSION_HASH:
 			{
+				pbl->action_status = dartt_bl_load_git_hash(pbl);
 				break;
 			}
 			case GET_APPLICATION_START_ADDR:
@@ -273,6 +275,30 @@ uint32_t dartt_bl_check_erase_request(dartt_bl_t * pbl)
 	if(erase_addr < app_start)
 	{
 		return DARTT_BL_ERASE_BLOCKED;
+	}
+	return DARTT_BL_SUCCESS;
+}
+
+
+uint32_t dartt_bl_load_git_hash(dartt_bl_t * pbl)
+{
+	if(pbl == NULL)
+	{
+		return DARTT_BL_NULLPTR;
+	}
+	if(sizeof(firmware_version) > sizeof(pbl->working_buffer))
+	{
+		return DARTT_BL_GIT_HASH_LOAD_OVERRUN;
+	}
+	pbl->working_size = 0;	
+	for(size_t i = 0; i < sizeof(firmware_version); i++)	
+	{
+		pbl->working_buffer[i] = firmware_version[i];
+		pbl->working_size++;
+	}
+	if(sizeof(firmware_version) == 0)	//if not present, throw this code and set output size to zero. zero size = noop on working buffer copy
+	{
+		return DARTT_BL_GIT_HASH_NOT_FOUND;
 	}
 	return DARTT_BL_SUCCESS;
 }
