@@ -12,6 +12,7 @@ uint32_t dartt_bl_check_erase_request(dartt_bl_t * pbl);
 uint32_t dartt_bl_check_write_request(dartt_bl_t * pbl);
 uint32_t dartt_bl_load_git_hash(dartt_bl_t * pbl);
 
+
 static unsigned char * working_target_ptr_ = NULL;	//assigned using the working buffer on target architecture. 
 
 /** @brief Initialize the bootloader. See dartt_bl.h for full documentation. */
@@ -129,6 +130,7 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
  * @brief Read @c working_size bytes from @c working_target_ptr_ into @c working_buffer.
  * @note Assumes memory-mapped flash. May trigger a hardfault on invalid addresses — caller
  *       should check @c action_status for @c DARTT_BL_INITIALIZED after any potentially unsafe op.
+ * @return @c DARTT_BL_OUT_OF_BOUNDS if read range exceeds flash region.
  */
 uint32_t dartt_bl_read_mem(dartt_bl_t * pbl)
 {
@@ -148,6 +150,11 @@ uint32_t dartt_bl_read_mem(dartt_bl_t * pbl)
 	{
 		return DARTT_BL_NULLPTR;
 	}
+	uintptr_t flash_end = dartt_bl_get_flash_end(pbl);
+	if((uintptr_t)working_target_ptr_ + (uintptr_t)pbl->working_size > flash_end)
+	{
+		return DARTT_BL_OUT_OF_BOUNDS;
+	}
 	for(uint32_t i = 0; i < pbl->working_size; i++)
 	{
 		pbl->working_buffer[i] = working_target_ptr_[i];
@@ -158,6 +165,7 @@ uint32_t dartt_bl_read_mem(dartt_bl_t * pbl)
 /**
  * @brief Compute CRC32 of the application image and store in @c pbl->fds.application_crc32.
  * @note Uses @c application_start_addr__ and @c pbl->fds.application_size as the range.
+ * @return @c DARTT_BL_OUT_OF_BOUNDS if the application image range exceeds flash region.
  */
 uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl)
 {
@@ -165,9 +173,14 @@ uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl)
 	{
 		return DARTT_BL_NULLPTR;
 	}
-	
-	const unsigned char * p_rmem = application_start_addr__;	//compile-time constant
-	size_t app_size = (size_t)(pbl->fds.application_size);	//IMPORTANT NOTES: the fixed size of application_size means on a 64 bit system
+
+	const unsigned char * p_rmem = application_start_addr__;
+	size_t app_size = (size_t)(pbl->fds.application_size);
+	uintptr_t flash_end = (uintptr_t)flash_base_addr__ + (uintptr_t)pbl->attr.num_pages * (uintptr_t)pbl->attr.page_size;
+	if((uintptr_t)application_start_addr__ + (uintptr_t)app_size > flash_end)
+	{
+		return DARTT_BL_OUT_OF_BOUNDS;
+	}
 
 	pbl->fds.application_crc32 = get_crc32(p_rmem, app_size);
 	return DARTT_BL_SUCCESS;
@@ -223,11 +236,21 @@ unsigned char * dartt_bl_get_working_ptr(void)
 	return working_target_ptr_;
 }
 
+uintptr_t dartt_bl_get_flash_end(dartt_bl_t * pbl)
+{
+	if(pbl == NULL)
+	{
+		return 0;	//error case should return null for safety
+	}
+	return (uintptr_t)(flash_base_addr__) + (uintptr_t)pbl->attr.num_pages * (uintptr_t)pbl->attr.page_size;
+
+}
+
 uintptr_t dartt_bl_get_page_addr(dartt_bl_t * pbl)
 {
 	if(pbl == NULL)
 	{
-		return DARTT_BL_NULLPTR;
+		return 0;	//error case should return null for safety
 	}
 	return ((uintptr_t)flash_base_addr__) + ((uintptr_t)pbl->attr.page_size) * ((uintptr_t)pbl->erase_page);
 }
@@ -256,6 +279,11 @@ uint32_t dartt_bl_check_write_request(dartt_bl_t * pbl)
 	{
 		return DARTT_BL_WRITE_BLOCKED;
 	}
+	uintptr_t flash_end = dartt_bl_get_flash_end(pbl);
+	if((uintptr_t)working_target_ptr_ + (uintptr_t)pbl->working_size > flash_end)
+	{
+		return DARTT_BL_OUT_OF_BOUNDS;
+	}
 	return DARTT_BL_SUCCESS;
 }
 
@@ -278,6 +306,10 @@ uint32_t dartt_bl_check_erase_request(dartt_bl_t * pbl)
 	if(erase_addr < app_start)
 	{
 		return DARTT_BL_ERASE_BLOCKED;
+	}
+	if(pbl->erase_page + pbl->erase_num_pages > pbl->attr.num_pages)
+	{
+		return DARTT_BL_OUT_OF_BOUNDS;
 	}
 	return DARTT_BL_SUCCESS;
 }

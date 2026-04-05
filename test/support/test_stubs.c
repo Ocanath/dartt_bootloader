@@ -12,7 +12,11 @@ uint32_t dartt_bl_load_fds(dartt_bl_t * pbl)
 		return DARTT_BL_NULLPTR;
 	}
 	TEST_ASSERT_LESS_THAN(0xFFFFFFFF, sizeof(fake_application_area));
-	pbl->fds.application_size = sizeof(fake_application_area);
+	// pbl->fds.application_size = sizeof(fake_application_area);
+	uintptr_t flash_base = (uintptr_t)flash_base_addr__;
+	uintptr_t app_start = (uintptr_t)application_start_addr__;
+	uintptr_t flash_end = flash_base + (uintptr_t)sizeof(fake_application_area);
+	pbl->fds.application_size = flash_end - app_start;
 	
 	return DARTT_BL_SUCCESS;
 }

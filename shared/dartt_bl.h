@@ -32,7 +32,8 @@ enum {
 	DARTT_BL_WRITE_BLOCKED = -10,
 	DARTT_BL_WRITE_SIZE_UNINITALIZED = -11,
 	DARTT_BL_GIT_HASH_LOAD_OVERRUN = -12,
-	DARTT_BL_GIT_HASH_NOT_FOUND = -14
+	DARTT_BL_GIT_HASH_NOT_FOUND = -14,
+	DARTT_BL_OUT_OF_BOUNDS = -15
 };
 
 /**
@@ -102,8 +103,15 @@ unsigned char * dartt_bl_get_working_ptr(void);
 /**
  * @brief Compute the byte address of the requested erase page.
  * @param pbl Pointer to bootloader control structure.
- * @return Byte address of @c pbl->erase_page, or @c DARTT_BL_NULLPTR if @c pbl is NULL.
+ * @return Byte address of @c pbl->erase_page, or @c NULL if @c pbl is NULL.
  */
 uintptr_t dartt_bl_get_page_addr(dartt_bl_t * pbl);
+
+/**
+ * @brief Compute the byte address of the last address of memory. Used for out of bounds checks
+ * @param pbl Pointer to bootloader control structure.
+ * @return Byte address of @c pbl->erase_page, or @c NULL if @c pbl is NULL.
+ */
+uintptr_t dartt_bl_get_flash_end(dartt_bl_t * pbl);
 
 #endif
