@@ -129,3 +129,6 @@ int main(void)
 `dartt_bl_init` must be called before the event handler loop. Do not call the event handler before init completes — `action_status` is undefined prior to init.
 
 
+## 5. version.h
+
+The target implementation needs to generate the version header with pre-build scripting. `get_version.bat` and `get_version.sh` are provided in `scripts/`. It is critical that these scripts run on build so that the hash is not stale.
