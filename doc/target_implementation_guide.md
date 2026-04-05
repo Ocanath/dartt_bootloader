@@ -116,7 +116,7 @@ int main(void)
 {
     // hardware init (clocks, peripherals, comms)
 
-    dartt_bl_t bootloader;
+    dartt_bl_t bootloader = {};
     dartt_bl_init(&bootloader);
 
     while (1)
@@ -128,20 +128,4 @@ int main(void)
 
 `dartt_bl_init` must be called before the event handler loop. Do not call the event handler before init completes — `action_status` is undefined prior to init.
 
----
 
-## 5. Checklist
-
-- [ ] `flash_base_addr__` defined in linker script
-- [ ] `application_start_addr__` defined in linker script
-- [ ] All application linker scripts updated to match `application_start_addr__`
-- [ ] `dartt_bl_get_attributes` sets nonzero `page_size` and `write_size`
-- [ ] `dartt_bl_load_fds` handles blank flash gracefully
-- [ ] `dartt_bl_update_persistent_settings` does not overlap application or bootloader partitions
-- [ ] `dartt_bl_handle_comms` calls `dartt_frame_to_payload` and `dartt_parse_general_message`
-- [ ] `dartt_bl_flash_erase` uses `dartt_bl_get_page_addr`
-- [ ] `dartt_bl_flash_write` uses `dartt_bl_get_working_ptr`, handles write alignment padding
-- [ ] `dartt_bl_cleanup_system` disables interrupts
-- [ ] `dartt_bl_start_application` sets VTOR, loads MSP, jumps
-- [ ] Hard fault handler calls `NVIC_SystemReset()`
-- [ ] Main loop calls `dartt_bl_init` then `dartt_bl_event_handler` in a loop
