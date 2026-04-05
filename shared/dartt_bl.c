@@ -2,6 +2,7 @@
 #include "dartt_bl_stubs.h"
 #include "checksum.h"
 #include <stdbool.h>
+#include "version.h"
 
 uint32_t dartt_bl_read_mem(dartt_bl_t * pbl);
 uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl);
