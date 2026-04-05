@@ -132,3 +132,5 @@ int main(void)
 ## 5. version.h
 
 The target implementation needs to generate the version header with pre-build scripting. `get_version.bat` and `get_version.sh` are provided in `scripts/`. It is critical that these scripts run on build so that the hash is not stale.
+
+It is recommended to use the ruby script to do this, but it is not essential - ruby is used because it is required to run the unit test suite (ceedling).
