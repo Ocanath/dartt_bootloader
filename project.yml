@@ -58,7 +58,7 @@
     - module_generator                # handy for quickly creating source, header, and test templates
     #- gcov                           # test coverage using gcov. Requires gcc, gcov, and a coverage analyzer like gcovr
     #- bullseye                       # test coverage using bullseye. Requires bullseye for your platform
-    #- command_hooks                  # write custom actions to be called at different points during the build process
+    - command_hooks                  # write custom actions to be called at different points during the build process
     #- compile_commands_json_db       # generate a compile_commands.json file
     #- dependencies                   # automatically fetch 3rd party libraries, etc.
     #- subprojects                    # managing builds and test for static libraries
@@ -309,28 +309,11 @@
 #      :build_root: ./subprojectA/build
 #      :defines: []
 
-# :command_hooks:
-#   :pre_mock_preprocess:
-#   :post_mock_preprocess:
-#   :pre_test_preprocess:
-#   :post_test_preprocess:
-#   :pre_mock_generate:
-#   :post_mock_generate:
-#   :pre_runner_generate:
-#   :post_runner_generate:
-#   :pre_compile_execute:
-#   :post_compile_execute:
-#   :pre_link_execute:
-#   :post_link_execute:
-#   :pre_test_fixture_execute:
-#   :post_test_fixture_execute:
-#   :pre_test:
-#   :post_test:
-#   :pre_release:
-#   :post_release:
-#   :pre_build:
-#   :post_build:
-#   :post_error:
+:command_hooks:
+  :pre_build:
+    :executable: ruby
+    :arguments:
+      - scripts/run_get_version.rb
 
 ################################################################
 # TOOLCHAIN CONFIGURATION
