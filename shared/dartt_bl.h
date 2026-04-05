@@ -62,8 +62,10 @@ typedef struct dartt_bl_t
 	uint32_t erase_page;	//page index
 	uint32_t erase_num_pages;	//number of pages starting from the page index to erase
 
-	//attributes and persistent settings
+	//attributes 
 	dartt_bl_attributes_t attr;	//attributes which must be loaded by the get attributes stub	
+	
+	//persistent settings
 	dartt_bl_persistent_t fds;	//persistent settings for the bootloader, such as module number, a shared secret for decryption, etc. Currently only used for module number
 }dartt_bl_t;
 
