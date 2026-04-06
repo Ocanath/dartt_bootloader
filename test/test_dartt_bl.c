@@ -7,12 +7,51 @@
 
 extern unsigned char fake_application_area[0x2000];
 
-void test_bl_init(void)
+void test_bl_empty_init(void)
 {
-	dartt_bl_init(NULL);
+	dartt_bl_init(NULL);	//make sure it doesn't crash the test case with a null deref
+}
+
+void test_bl_init_empty_settings(void)
+{
+	/*put a fake settings in*/
+	for(size_t i = 0; i < sizeof(fake_application_area); i++)
+	{
+		fake_application_area[i] = 0xFF;
+	}
 	dartt_bl_t bootloader_ctl = {0};
 	dartt_bl_init(&bootloader_ctl);
 	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
+	TEST_ASSERT_EQUAL(0xFFFFFFFF, bootloader_ctl.fds.module_number);
+	TEST_ASSERT_EQUAL(0xFFFFFFFF, bootloader_ctl.fds.application_crc32);
+	TEST_ASSERT_EQUAL(0xFFFFFFFF, bootloader_ctl.fds.application_size);
+	TEST_ASSERT_EQUAL(0xFFFFFFFF, bootloader_ctl.fds.boot_mode);
+}
+
+void test_bl_init_settings_loaded(void)
+{
+	/*put a fake settings in*/
+	for(size_t i = 0; i < sizeof(fake_application_area); i++)
+	{
+		fake_application_area[i] = 0xFF;
+	}
+	dartt_bl_persistent_t settings = {
+		.module_number = 1,
+		.application_size = 50,
+		.application_crc32 = 12,
+		.boot_mode = 0xDEADBEEF
+	};
+	uintptr_t app_start = (uintptr_t)application_start_addr__;
+	uintptr_t page_size = 0x100;
+	TEST_ASSERT_GREATER_THAN(page_size, app_start);
+	unsigned char * fds_start = (unsigned char *)(app_start - page_size);
+	memcpy(fds_start, &settings, sizeof(settings));
+
+	
+	dartt_bl_t bootloader_ctl = {0};
+	dartt_bl_init(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
+	TEST_ASSERT_EQUAL_MEMORY(&settings, &bootloader_ctl.fds, sizeof(dartt_bl_persistent_t));
 }
 
 void test_get_app_start(void)
@@ -457,3 +496,52 @@ void test_get_version_hash(void)
 	TEST_ASSERT_EQUAL(sizeof(firmware_version), bootloader_ctl.working_size);
 
 }
+
+void test_persistent_settings_save(void)
+{
+	/*put a fake settings in*/
+	for(size_t i = 0; i < sizeof(fake_application_area); i++)
+	{
+		fake_application_area[i] = 0xFF;
+	}
+	
+	dartt_bl_t bootloader_ctl = {0};
+	dartt_bl_init(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
+
+	dartt_bl_persistent_t settings = {
+		.module_number = 1,
+		.application_size = 50,
+		.application_crc32 = 12,
+		.boot_mode = 0xDEADBEEF
+	};
+	TEST_ASSERT_NOT_EQUAL(settings.module_number, bootloader_ctl.fds.module_number);
+	TEST_ASSERT_NOT_EQUAL(settings.application_size, bootloader_ctl.fds.application_size);	//etc
+
+	bootloader_ctl.fds = settings;
+
+	bootloader_ctl.action_flag = SAVE_SETTINGS;
+	dartt_bl_event_handler(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
+	
+	uintptr_t app_start = (uintptr_t)application_start_addr__;
+	uintptr_t page_size = 0x100;
+	TEST_ASSERT_GREATER_THAN(page_size, app_start);
+	unsigned char * fds_start = (unsigned char *)(app_start - page_size);
+	TEST_ASSERT_EQUAL_MEMORY(&settings, fds_start, sizeof(dartt_bl_persistent_t));
+
+	for(size_t i = 0; i < sizeof(fake_application_area); i++)
+	{
+		if(i < (0x400 - 0x100))
+		{
+			TEST_ASSERT_EQUAL(0xFF, fake_application_area[i]);
+		}
+		else if(i >= ((0x400 - 0x100) + sizeof(dartt_bl_persistent_t)))
+		{
+			TEST_ASSERT_EQUAL(0xFF, fake_application_area[i]);
+		}
+	}
+
+}
+
