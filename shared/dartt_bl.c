@@ -73,7 +73,7 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 				pbl->action_status = dartt_bl_check_write_request(pbl);
 				if(pbl->action_status == DARTT_BL_SUCCESS)
 				{
-					pbl->action_status = dartt_bl_flash_write(pbl);
+					pbl->action_status = dartt_bl_flash_write(working_target_ptr_, pbl->working_buffer, pbl->working_size);
 				}
 				break;
 			}
@@ -82,7 +82,7 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 				pbl->action_status = dartt_bl_check_erase_request(pbl);
 				if(pbl->action_status == DARTT_BL_SUCCESS)
 				{
-					pbl->action_status = dartt_bl_flash_erase(pbl);
+					pbl->action_status = dartt_bl_flash_erase(pbl->erase_page, pbl->erase_num_pages);
 				}
 				break;
 			}
@@ -412,9 +412,12 @@ uint32_t dartt_bl_load_fds(dartt_bl_t * pbl)
 
 
 /**
- * @brief Write @c pbl->fds to non-volatile storage.
+ * @brief Erase the persistent settings page and write @c pbl->fds to it.
  * @param pbl Pointer to bootloader control structure.
  * @return @c DARTT_BL_SUCCESS or error code.
+ * @note Always sets @c working_size to zero on entry, invalidating working buffer contents.
+ *       Uses @c working_buffer as scratch if @c sizeof(dartt_bl_persistent_t) is not a
+ *       multiple of @c attr.write_size. Caller must reload working state after this call.
  */
 uint32_t dartt_bl_update_persistent_settings(dartt_bl_t * pbl)
 {
@@ -422,29 +425,46 @@ uint32_t dartt_bl_update_persistent_settings(dartt_bl_t * pbl)
 	{
 		return DARTT_BL_NULLPTR;
 	}
+	pbl->working_size = 0;	//always invalidate working buffer on entry — see dartt_bl.h contract note
 	if(pbl->attr.write_size == 0)	//div by zero guard
 	{
 		return DARTT_BL_WRITE_SIZE_UNINITALIZED;
 	}
-	/*setup area*/
-	//
 
-	pbl->erase_page = dartt_bl_get_fds_start_page(pbl);
-	pbl->erase_num_pages = 1;
-	uint32_t rc = dartt_bl_flash_erase(pbl);
+	uint32_t fds_page = dartt_bl_get_fds_start_page(pbl);
+	uint32_t rc = dartt_bl_flash_erase(fds_page, 1);
 	if(rc != DARTT_BL_SUCCESS)
 	{
 		return rc;
 	}
-		
 	size_t num_writes = sizeof(dartt_bl_persistent_t)/((size_t)pbl->attr.write_size);
-	size_t zeropad_size = sizeof(dartt_bl_persistent_t) % ((size_t)pbl->attr.write_size);	//if unaligned, must pad the last write with zeros
-
-	rc = dartt_bl_flash_write(pbl);
-
-
-	/*restore area*/
-	//
-
-	return DARTT_BL_SUCCESS;
+	size_t nbytes_remainder = sizeof(dartt_bl_persistent_t) % ((size_t)pbl->attr.write_size);
+	unsigned char * fds_dest = (unsigned char *)dartt_bl_get_fds_start_ptr(pbl);
+	unsigned char * fds_src = (unsigned char *)(&pbl->fds);
+	for(size_t i = 0; i < num_writes; i++)
+	{
+		rc = dartt_bl_flash_write(fds_dest, fds_src, pbl->attr.write_size);
+		if(rc != DARTT_BL_SUCCESS)
+		{
+			return rc;
+		}
+		fds_dest += pbl->attr.write_size;
+		fds_src += pbl->attr.write_size;
+	}
+	if(nbytes_remainder != 0)
+	{
+		for(size_t i = 0; i < pbl->attr.write_size; i++)
+		{
+			if(i < nbytes_remainder)
+			{
+				pbl->working_buffer[i] = fds_src[i];
+			}
+			else
+			{
+				pbl->working_buffer[i] = 0;
+			}
+		}
+		rc = dartt_bl_flash_write(fds_dest, pbl->working_buffer, pbl->attr.write_size);
+	}
+	return rc;
 }

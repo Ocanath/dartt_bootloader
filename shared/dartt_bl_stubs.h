@@ -1,6 +1,6 @@
 #ifndef DARTT_BL_STUBS_H
 #define DARTT_BL_STUBS_H
-
+#include "stddef.h"
 #include "dartt_bl.h"
 
 /** @defgroup dartt_bl_stubs Target Implementation Stubs
@@ -44,19 +44,21 @@ uint32_t dartt_bl_cleanup_system(void);
 uint32_t dartt_bl_start_application(dartt_bl_t * pbl);
 
 /**
- * @brief Write @c pbl->working_buffer to the address returned by @c dartt_bl_get_working_ptr().
- * @param pbl Pointer to bootloader control structure.
+ * @brief Write @c size bytes from @c src to @c dest in target flash.
+ * @param dest  Target flash address to write to.
+ * @param src   Source buffer containing data to write.
+ * @param size  Number of bytes to write. Guaranteed to be a nonzero multiple of @c attr.write_size.
  * @return @c DARTT_BL_SUCCESS or error code.
- * @note @c working_size is guaranteed to be a nonzero multiple of @c attr.write_size.
  */
-uint32_t dartt_bl_flash_write(dartt_bl_t * pbl);
+uint32_t dartt_bl_flash_write(unsigned char * dest, unsigned char * src, size_t size);
 
 /**
- * @brief Erase @c pbl->erase_num_pages pages starting at the address from @c dartt_bl_get_page_addr().
- * @param pbl Pointer to bootloader control structure.
+ * @brief Erase @c erase_size bytes of flash starting at @c page_addr.
+ * @param page_addr  Byte address of the first page to erase. Aligned to @c attr.page_size.
+ * @param erase_size Total bytes to erase. Equal to @c erase_num_pages * @c attr.page_size.
  * @return @c DARTT_BL_SUCCESS or error code.
  */
-uint32_t dartt_bl_flash_erase(dartt_bl_t * pbl);
+uint32_t dartt_bl_flash_erase(uint32_t erase_page, uint32_t erase_num_pages);
 
 /** @} */
 

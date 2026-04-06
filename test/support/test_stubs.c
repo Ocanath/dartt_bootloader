@@ -1,6 +1,8 @@
 #include "dartt_bl_stubs.h"
 #include "unity.h"
 
+#define TEST_PAGE_SIZE 0x100
+
 unsigned char fake_application_area[0x2000] = {};	
 const unsigned char * application_start_addr__ = &fake_application_area[0x400];	//must define this
 const unsigned char * flash_base_addr__ = &fake_application_area[0];
@@ -20,7 +22,7 @@ void set_application_size(dartt_bl_t * pbl)
 
 uint32_t dartt_bl_get_attributes(dartt_bl_t * pbl)
 {
-	pbl->attr.page_size = 0x100;
+	pbl->attr.page_size = TEST_PAGE_SIZE;
 	pbl->attr.num_pages = sizeof(fake_application_area)/((size_t)pbl->attr.page_size);
 	pbl->attr.write_size = 8;
 	return DARTT_BL_SUCCESS;
@@ -44,25 +46,24 @@ uint32_t dartt_bl_start_application(dartt_bl_t * pbl)
 
 
 /*emulate write*/
-uint32_t dartt_bl_flash_write(dartt_bl_t * pbl)
+uint32_t dartt_bl_flash_write(unsigned char * dest, unsigned char * src, size_t size)
 {
-	unsigned char * write_ptr = dartt_bl_get_working_ptr();
-	for(size_t i = 0; i < pbl->working_size; i++)
+	for(size_t i = 0; i < size; i++)
 	{
-		write_ptr[i] = pbl->working_buffer[i];
+		dest[i] = src[i];
 	}
 	return DARTT_BL_SUCCESS;
 }
 
 
 /*emulate erasure*/
-uint32_t dartt_bl_flash_erase(dartt_bl_t * pbl)
+uint32_t dartt_bl_flash_erase(uint32_t erase_page, uint32_t erase_num_pages)
 {
-	unsigned char * erase_ptr = (unsigned char *)dartt_bl_get_page_addr(pbl);
-	size_t erase_range = ((size_t)pbl->erase_num_pages)*((size_t)pbl->attr.page_size);
+	uintptr_t erase_ptr = ((uintptr_t)flash_base_addr__) + ((uintptr_t)TEST_PAGE_SIZE) * ((uintptr_t)erase_page);
+	size_t erase_range = ((size_t)erase_num_pages)*((size_t)TEST_PAGE_SIZE);
 	for(size_t i = 0; i < erase_range; i++)
 	{
-		erase_ptr[i] = 0xFF;
+		((unsigned char *)erase_ptr)[i] = 0xFF;
 	}
 	return DARTT_BL_SUCCESS;
 }

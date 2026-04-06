@@ -9,7 +9,7 @@ enum {
 	WRITE_BUFFER, 	//dispatch flag for writing the target flash memory region from the working buffer
 	ERASE_PAGES,	//dispatch flag for erasing the target page(s)
 	GET_CRC32,		//dispatch flag for get the CRC32 of the current flashed application
-	SAVE_SETTINGS,
+	SAVE_SETTINGS,	//dispatch flag to write pbl->fds to the persistent settings flash page. Invalidates working_size and working_buffer on return
 	GET_VERSION_HASH,	//dispatch flag to load the --short version hash in to the working buffer	
 	GET_APPLICATION_START_ADDR,	//loads target-specific pointer into the working buffer
 	GET_WORKING_ADDR,	//loads the current working address pointer into the working buffer
