@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "checksum.h"
+#include "dartt_crc.h"
 #include "dartt_bl.h"
 #include "dartt_bl_stubs.h"
 #include "version.h"

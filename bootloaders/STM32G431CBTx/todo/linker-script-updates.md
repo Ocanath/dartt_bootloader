@@ -5,5 +5,21 @@ Primary need here is to properly route memory region defintions to the applicati
 
 I confirmed that the startup assembly defines the vector table contents but does not depend on an absolute address in flash memory. Setting the VTOR pointer is sufficient for properly mapping interrupts in a target with modified ORIGIN.
 
+**Significant issue:** how to deal with the pointers.
+
+The linker symbols won't cleanly map to an `unsigned char *`. The typical pattern, allegedly, is to map them to an `unsigned char []` symbol. Reason being the linker will try to dereference the symbol at the assigned address, instead of load it as a symbol directly. 
+
+If you assign it to a `uintptr_t` or `unsigned char *`, the linker will try and dereference the symbol and load the contents at that location, rather than map out the address directly.
+
+**Solution** Helper functions that return `const unsigned char *` which get called in init, that we mock in the test environment and load from externed linker symbols on the real target.
+
 ## Plan
+
+Define memory map in the linker script.
+
+1. define PAGE_SIZE to be appropriate size for target (2K or 0x800 on STM32G431)
+1. Define BOOTLOADER_SIZE to be appropriate size for bootloader (e.g. 16K). It should extend to the end of the bootloader region, leaving exactly one page between the end of the bootloader region and the start of the application
+1. Define flash at origin to bootloader_size
+1. define application size symbol at origin+bootloader_size+page_size
+
 
