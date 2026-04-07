@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "dartt.h"
+#include "dartt_bl.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

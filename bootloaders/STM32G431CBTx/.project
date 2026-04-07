@@ -29,4 +29,22 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>Core/Src/C-COBS</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/external/byte-stuffing/C-COBS</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/src</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/external/dartt-protocol/src</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/shared</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/shared</locationURI>
+		</link>
+
+	</linkedResources>
 </projectDescription>
