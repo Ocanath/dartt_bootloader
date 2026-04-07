@@ -183,7 +183,7 @@ uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl)
 		return DARTT_BL_OUT_OF_BOUNDS;
 	}
 
-	pbl->fds.application_crc32 = get_crc32(p_rmem, app_size);
+	pbl->fds.application_crc32 = dartt_crc32(p_rmem, app_size);
 	return DARTT_BL_SUCCESS;
 }
 

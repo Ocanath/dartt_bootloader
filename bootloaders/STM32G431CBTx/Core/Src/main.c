@@ -98,7 +98,8 @@ int main(void)
   MX_FDCAN1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  dartt_bl_t bootloader = {};
+  dartt_bl_init(&bootloader);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -106,7 +107,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+	  dartt_bl_event_handler(&bootloader);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
