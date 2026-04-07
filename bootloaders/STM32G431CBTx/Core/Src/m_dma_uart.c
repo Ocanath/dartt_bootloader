@@ -26,8 +26,8 @@
 uart_it_t m_huart2 =
 {
 		.Instance = USART2,
-		.rxdma = DMA1_Channel2,
-		.txdma = DMA1_Channel3,
+		.rxdma = DMA1_Channel1,
+		.txdma = DMA1_Channel2,
 		.rx_mem =
 		{
 				.buf = gl_uart_rx_buf,//gl_rx_mem,
