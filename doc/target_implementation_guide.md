@@ -26,6 +26,11 @@ application_start_addr__ = 0x08004000;  /* 16KB bootloader partition */
 ```
 
 These two symbols are used by the shared core for bootloader region protection on erase and write. Getting them wrong will either fail to protect the bootloader or block valid application operations.
+### 1.1 Linker Memory Map
+
+On an STM32, the linker script must also be modified to have proper definitions of the memory map. The bootloader size is defined there (i.e. 16K, etc). As stated above, the flash base and application start symbols must be defined, but also you **must** check whether or not the total bootloader region (bootloader program + single reserved persistent settings page) overruns into the application area. 
+
+On your target application, this is also where you define the target start memory location. application_start_addr__ in the target bootloader must match the start address in your .elf or the bootloader tool should error out.
 
 ---
 
@@ -91,6 +96,9 @@ Jump to application code. The standard sequence:
 2. Set `SCB->VTOR` to `(uint32_t)application_start_addr__`
 3. Load MSP from the first word of the application vector table: `__set_MSP(*(uint32_t *)application_start_addr__)`
 4. Load the reset handler address from the second word and jump: `((void (*)(void))(*(uint32_t *)(application_start_addr__ + 4)))()`
+
+
+The startup assembly defines the vector table contents but does not depend on an absolute address in flash memory. Setting the VTOR pointer is sufficient for properly mapping interrupts in a target with modified ORIGIN. The target application linker script must be modified so the ORIGIN matches the application start address. This should be checked by the flashing tool and throw an error if there's an overlap.
 
 ---
 
