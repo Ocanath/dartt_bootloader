@@ -12,6 +12,10 @@
 const unsigned char * flash_base_addr__ = (const unsigned char *)(0x08000000);	//TODO: DELETE THIS, GENERATE VIA LINKER
 const unsigned char * application_start_addr__ = (const unsigned char *)(0x08003000);	//TODO: DELETE THIS, GENERATE VIA LINKER
 
+#define NUM_PAGES 		64
+#define PAGE_SIZE 		0x800
+#define WRITE_SIZE		8
+
 dartt_bl_t gl_bootloader = {};
 dartt_mem_t bootloader_alias = {
 		.buf = (unsigned char*)(&gl_bootloader),
@@ -20,6 +24,9 @@ dartt_mem_t bootloader_alias = {
 
 uint32_t dartt_bl_get_attributes(dartt_bl_t * pbl)
 {
+	pbl->attr.num_pages = NUM_PAGES;
+	pbl->attr.page_size = PAGE_SIZE;
+	pbl->attr.write_size = WRITE_SIZE;
 	return DARTT_BL_SUCCESS;
 }
 
@@ -83,10 +90,67 @@ uint32_t dartt_bl_start_application(dartt_bl_t * pbl)
 
 uint32_t dartt_bl_flash_write(unsigned char * dest, unsigned char * src, size_t size)
 {
+	size_t num_writes = size/WRITE_SIZE;	//modulo check already done pre-call, so we can safely ignore it
+
+	HAL_FLASH_Unlock();
+	uint32_t error = HAL_FLASH_ERROR_NONE;
+	size_t srcidx = 0;
+	uint32_t dest_addr = (uint32_t)(dest);	//HAL casts pointer to uint32_t - equal to uintptr_t but locked to our target. acceptable
+	for(size_t i = 0; i < num_writes; i++)
+	{
+
+		//little endian data load into payload word
+		uint64_t data = 0;
+		for(int i = 0; i < sizeof(uint64_t); i++)
+		{
+			data |= ((uint64_t)src[srcidx++]) << (i*8);
+		}
+
+		if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, dest_addr, data) == HAL_OK)
+		{
+			dest_addr += WRITE_SIZE;
+		}
+		else
+		{
+			/* Error occurred while writing data in Flash memory*/
+			error = HAL_FLASH_GetError ();
+			break;
+		}
+	}
+
+	HAL_FLASH_Lock();
+
+	if(error != HAL_FLASH_ERROR_NONE)
+	{
+		return DARTT_BL_ERASE_BLOCKED;
+	}
 	return DARTT_BL_SUCCESS;
 }
 
 uint32_t dartt_bl_flash_erase(uint32_t erase_page, uint32_t erase_num_pages)
 {
+
+	HAL_FLASH_Unlock();
+	uint32_t error = HAL_FLASH_ERROR_NONE;
+	FLASH_EraseInitTypeDef EraseInitStruct = {};
+	uint32_t PAGEError;
+	EraseInitStruct.TypeErase   = FLASH_TYPEERASE_PAGES;
+	EraseInitStruct.Banks = FLASH_BANK_1;	//on G431, there is only one bank per page
+	EraseInitStruct.Page = erase_page;
+	EraseInitStruct.NbPages     = erase_num_pages;
+
+	if (HAL_FLASHEx_Erase(&EraseInitStruct, &PAGEError) != HAL_OK)
+	{
+		/*Error occurred while page erase.*/
+		error = HAL_FLASH_GetError ();
+		//consider writing error to working buffer?
+	}
+	HAL_FLASH_Lock();
+
+
+	if(error != HAL_FLASH_ERROR_NONE)
+	{
+		return DARTT_BL_ERASE_BLOCKED;
+	}
 	return DARTT_BL_SUCCESS;
 }
