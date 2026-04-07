@@ -1,6 +1,6 @@
+#include <dartt_crc.h>
 #include "dartt_bl.h"
 #include "dartt_bl_stubs.h"
-#include "checksum.h"
 #include <stdbool.h>
 #include "version.h"
 
@@ -395,7 +395,7 @@ uint32_t dartt_bl_load_fds(dartt_bl_t * pbl)
 	{
 		return DARTT_BL_FDS_LOAD_FAILED;
 	}
-	if(p_fds + (uintptr_t)(sizeof(dartt_bl_persistent_t)) >= application_start_addr__)
+	if(p_fds + (uintptr_t)(sizeof(dartt_bl_persistent_t)) >= (uintptr_t)application_start_addr__)
 	{
 		return DARTT_BL_FDS_LOAD_FAILED;
 	}
