@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "dartt.h"
 #include "dartt_bl.h"
+#include "m_dma_uart.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -32,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+extern dartt_bl_t gl_bootloader;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -98,8 +99,7 @@ int main(void)
   MX_FDCAN1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  dartt_bl_t bootloader = {};
-  dartt_bl_init(&bootloader);
+  dartt_bl_init(&gl_bootloader);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -107,7 +107,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  dartt_bl_event_handler(&bootloader);
+	  dartt_bl_event_handler(&gl_bootloader);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -244,7 +244,7 @@ static void MX_USART2_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART2_Init 2 */
-
+	m_uart_start_interrupts(&m_huart2);
   /* USER CODE END USART2_Init 2 */
 
 }
