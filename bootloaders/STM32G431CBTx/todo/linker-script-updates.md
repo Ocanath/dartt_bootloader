@@ -11,7 +11,7 @@ The linker symbols won't cleanly map to an `unsigned char *`. The typical patter
 
 If you assign it to a `uintptr_t` or `unsigned char *`, the linker will try and dereference the symbol and load the contents at that location, rather than map out the address directly.
 
-**Solution** Helper functions that return `const unsigned char *` which get called in init, that we mock in the test environment and load from externed linker symbols on the real target.
+**Solution** Helper functions defined in `shared/dartt_bl_linker.c` with `__attribute__((weak))` that return the linker symbol addresses as `const unsigned char *`. On hardware the weak definitions run, using `extern const unsigned char symbol__[]` (array decay, no dereference). In the test environment `test/support/test_stubs.c` provides strong definitions that return addresses into `fake_application_area`, displacing the weak ones at link time. No mocking framework needed.
 
 ## Plan
 
