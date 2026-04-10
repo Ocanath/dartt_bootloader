@@ -2,6 +2,7 @@
 #include "dartt_crc.h"
 #include "dartt_bl.h"
 #include "dartt_bl_stubs.h"
+#include "dartt_bl_linker.h"
 #include "version.h"
 #include "unity.h"
 
@@ -41,7 +42,7 @@ void test_bl_init_settings_loaded(void)
 		.application_crc32 = 12,
 		.boot_mode = 0xDEADBEEF
 	};
-	uintptr_t app_start = (uintptr_t)application_start_addr__;
+	uintptr_t app_start = (uintptr_t)dartt_bl_get_app_start();
 	uintptr_t page_size = 0x100;
 	TEST_ASSERT_GREATER_THAN(page_size, app_start);
 	unsigned char * fds_start = (unsigned char *)(app_start - page_size);
@@ -73,7 +74,7 @@ void test_get_app_start(void)
 		int shift = i*8;
 		p |= ((uintptr_t)(bootloader_ctl.working_buffer[i])) << shift;
 	}
-	uintptr_t startref = (uintptr_t)(application_start_addr__);
+	uintptr_t startref = (uintptr_t)(dartt_bl_get_app_start());
 	TEST_ASSERT_EQUAL(startref, p);
 }
 
@@ -243,10 +244,10 @@ void test_erase_valid(void)
 	TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
 	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
 	unsigned char * erase_ptr = (unsigned char *)dartt_bl_get_page_addr(&bootloader_ctl);
-	TEST_ASSERT_EQUAL(application_start_addr__, erase_ptr);
+	TEST_ASSERT_EQUAL(dartt_bl_get_app_start(), erase_ptr);
 	for(size_t i = 0; i < bootloader_ctl.attr.page_size; i++)
 	{
-		TEST_ASSERT_EQUAL(0xFF, application_start_addr__[i]);
+		TEST_ASSERT_EQUAL(0xFF, dartt_bl_get_app_start()[i]);
 	}
 }
 
@@ -271,7 +272,7 @@ void test_write_buffer_size_zero(void)
 	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
 	set_application_size(&bootloader_ctl);
 
-	dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, application_start_addr__);
+	dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, dartt_bl_get_app_start());
 	bootloader_ctl.action_flag = SET_WORKING_ADDR;
 	dartt_bl_event_handler(&bootloader_ctl);
 	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
@@ -290,7 +291,7 @@ void test_write_buffer_size_too_large(void)
 	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
 	set_application_size(&bootloader_ctl);
 
-	dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, application_start_addr__);
+	dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, dartt_bl_get_app_start());
 	bootloader_ctl.action_flag = SET_WORKING_ADDR;
 	dartt_bl_event_handler(&bootloader_ctl);
 	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
@@ -309,7 +310,7 @@ void test_write_buffer_size_not_multiple_of_write_size(void)
 	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
 	set_application_size(&bootloader_ctl);
 
-	dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, application_start_addr__);
+	dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, dartt_bl_get_app_start());
 	bootloader_ctl.action_flag = SET_WORKING_ADDR;
 	dartt_bl_event_handler(&bootloader_ctl);
 	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
@@ -328,7 +329,7 @@ void test_write_buffer_write_size_uninit(void)
 	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
 	set_application_size(&bootloader_ctl);
 
-	dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, application_start_addr__);
+	dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, dartt_bl_get_app_start());
 	bootloader_ctl.action_flag = SET_WORKING_ADDR;
 	dartt_bl_event_handler(&bootloader_ctl);
 	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
@@ -348,7 +349,7 @@ void test_write_buffer_blocked(void)
 	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
 	set_application_size(&bootloader_ctl);
 
-	dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, flash_base_addr__);
+	dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, dartt_bl_get_flash_base());
 	bootloader_ctl.action_flag = SET_WORKING_ADDR;
 	dartt_bl_event_handler(&bootloader_ctl);
 	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
@@ -525,7 +526,7 @@ void test_persistent_settings_save(void)
 	TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
 	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
 	
-	uintptr_t app_start = (uintptr_t)application_start_addr__;
+	uintptr_t app_start = (uintptr_t)dartt_bl_get_app_start();
 	uintptr_t page_size = 0x100;
 	TEST_ASSERT_GREATER_THAN(page_size, app_start);
 	unsigned char * fds_start = (unsigned char *)(app_start - page_size);

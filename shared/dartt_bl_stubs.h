@@ -8,12 +8,6 @@
  *  @{
  */
 
-/** @brief First address of flash on the target. Defined by linker script. */
-extern const unsigned char * application_start_addr__;
-
-/** @brief Base address of flash memory on the target. Defined by linker script. */
-extern const unsigned char * flash_base_addr__;
-
 /**
  * @brief Populate @c pbl->attr with target flash attributes.
  * @param pbl Pointer to bootloader control structure.

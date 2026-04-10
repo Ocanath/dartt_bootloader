@@ -1,23 +1,26 @@
 #include "dartt_bl_stubs.h"
+#include "dartt_bl_linker.h"
 #include "unity.h"
 
 #define TEST_PAGE_SIZE 0x100
 
-unsigned char fake_application_area[0x2000] = {};	
-const unsigned char * application_start_addr__ = &fake_application_area[0x400];	//must define this
-const unsigned char * flash_base_addr__ = &fake_application_area[0];
+unsigned char fake_application_area[0x2000] = {};
 
+const unsigned char * dartt_bl_get_flash_base(void) { return &fake_application_area[0]; }
+const unsigned char * dartt_bl_get_app_start(void)  { return &fake_application_area[0x400]; }
+
+const unsigned char flash_base_addr__[] = "if you are reading this, you fucked up the test environment";
+const unsigned char application_start_addr__[] = "if you are reading this, you fucked up the test environment";
 
 /*
 Test scoped helper
 */
 void set_application_size(dartt_bl_t * pbl)
 {
-	uintptr_t flash_base = (uintptr_t)flash_base_addr__;
-	uintptr_t app_start = (uintptr_t)application_start_addr__;
+	uintptr_t flash_base = (uintptr_t)dartt_bl_get_flash_base();
+	uintptr_t app_start = (uintptr_t)dartt_bl_get_app_start();
 	uintptr_t flash_end = flash_base + (uintptr_t)sizeof(fake_application_area);
 	pbl->fds.application_size = flash_end - app_start;
-
 }
 
 uint32_t dartt_bl_get_attributes(dartt_bl_t * pbl)
@@ -59,7 +62,7 @@ uint32_t dartt_bl_flash_write(unsigned char * dest, unsigned char * src, size_t 
 /*emulate erasure*/
 uint32_t dartt_bl_flash_erase(uint32_t erase_page, uint32_t erase_num_pages)
 {
-	uintptr_t erase_ptr = ((uintptr_t)flash_base_addr__) + ((uintptr_t)TEST_PAGE_SIZE) * ((uintptr_t)erase_page);
+	uintptr_t erase_ptr = ((uintptr_t)dartt_bl_get_flash_base()) + ((uintptr_t)TEST_PAGE_SIZE) * ((uintptr_t)erase_page);
 	size_t erase_range = ((size_t)erase_num_pages)*((size_t)TEST_PAGE_SIZE);
 	for(size_t i = 0; i < erase_range; i++)
 	{

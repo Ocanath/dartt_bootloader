@@ -1,6 +1,7 @@
 #include <dartt_crc.h>
 #include "dartt_bl.h"
 #include "dartt_bl_stubs.h"
+#include "dartt_bl_linker.h"
 #include <stdbool.h>
 #include "version.h"
 
@@ -103,7 +104,7 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 			}
 			case GET_APPLICATION_START_ADDR:
 			{
-				pbl->action_status = dartt_bl_load_ptr_to_wbuf(pbl, application_start_addr__);
+				pbl->action_status = dartt_bl_load_ptr_to_wbuf(pbl, dartt_bl_get_app_start());
 				break;
 			}
 			case GET_WORKING_ADDR:
@@ -165,7 +166,7 @@ uint32_t dartt_bl_read_mem(dartt_bl_t * pbl)
 
 /**
  * @brief Compute CRC32 of the application image and store in @c pbl->fds.application_crc32.
- * @note Uses @c application_start_addr__ and @c pbl->fds.application_size as the range.
+ * @note Uses @c dartt_bl_get_app_start() and @c pbl->fds.application_size as the range.
  * @return @c DARTT_BL_OUT_OF_BOUNDS if the application image range exceeds flash region.
  */
 uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl)
@@ -175,10 +176,10 @@ uint32_t dartt_bl_get_crc32(dartt_bl_t * pbl)
 		return DARTT_BL_NULLPTR;
 	}
 
-	const unsigned char * p_rmem = application_start_addr__;
+	const unsigned char * p_rmem = dartt_bl_get_app_start();
 	size_t app_size = (size_t)(pbl->fds.application_size);
-	uintptr_t flash_end = (uintptr_t)flash_base_addr__ + (uintptr_t)pbl->attr.num_pages * (uintptr_t)pbl->attr.page_size;
-	if((uintptr_t)application_start_addr__ + (uintptr_t)app_size > flash_end)
+	uintptr_t flash_end = (uintptr_t)dartt_bl_get_flash_base() + (uintptr_t)pbl->attr.num_pages * (uintptr_t)pbl->attr.page_size;
+	if((uintptr_t)dartt_bl_get_app_start() + (uintptr_t)app_size > flash_end)
 	{
 		return DARTT_BL_OUT_OF_BOUNDS;
 	}
@@ -243,7 +244,7 @@ uintptr_t dartt_bl_get_flash_end(dartt_bl_t * pbl)
 	{
 		return 0;	//error case should return null for safety
 	}
-	return (uintptr_t)(flash_base_addr__) + (uintptr_t)pbl->attr.num_pages * (uintptr_t)pbl->attr.page_size;
+	return (uintptr_t)(dartt_bl_get_flash_base()) + (uintptr_t)pbl->attr.num_pages * (uintptr_t)pbl->attr.page_size;
 
 }
 
@@ -253,7 +254,7 @@ uintptr_t dartt_bl_get_page_addr(dartt_bl_t * pbl)
 	{
 		return 0;	//error case should return null for safety
 	}
-	return ((uintptr_t)flash_base_addr__) + ((uintptr_t)pbl->attr.page_size) * ((uintptr_t)pbl->erase_page);
+	return ((uintptr_t)dartt_bl_get_flash_base()) + ((uintptr_t)pbl->attr.page_size) * ((uintptr_t)pbl->erase_page);
 }
 
 uint32_t dartt_bl_check_write_request(dartt_bl_t * pbl)
@@ -276,7 +277,7 @@ uint32_t dartt_bl_check_write_request(dartt_bl_t * pbl)
 	{
 		return DARTT_BL_WORKING_SIZE_INVALID;
 	}
-	if(working_target_ptr_ < application_start_addr__)
+	if(working_target_ptr_ < dartt_bl_get_app_start())
 	{
 		return DARTT_BL_WRITE_BLOCKED;
 	}
@@ -303,7 +304,7 @@ uint32_t dartt_bl_check_erase_request(dartt_bl_t * pbl)
 		return DARTT_BL_ERASE_FAILED_INVALID_NUMPAGES;
 	}
 	uintptr_t erase_addr = dartt_bl_get_page_addr(pbl);
-	uintptr_t app_start = (uintptr_t)(application_start_addr__);
+	uintptr_t app_start = (uintptr_t)(dartt_bl_get_app_start());
 	if(erase_addr < app_start)
 	{
 		return DARTT_BL_ERASE_BLOCKED;
@@ -353,7 +354,7 @@ uintptr_t dartt_bl_get_fds_start_ptr(dartt_bl_t * pbl)
 	{
 		return 0;
 	}
-	uintptr_t app_start = (uintptr_t)application_start_addr__;
+	uintptr_t app_start = (uintptr_t)dartt_bl_get_app_start();
 	uintptr_t page_size = (uintptr_t)pbl->attr.page_size;
 	if(page_size > app_start)
 	{
@@ -372,7 +373,7 @@ uint32_t dartt_bl_get_fds_start_page(dartt_bl_t * pbl)
 	uintptr_t fds_ptr = dartt_bl_get_fds_start_ptr(pbl);
 	if(fds_ptr != 0)
 	{
-		return (size_t)(fds_ptr - (uintptr_t)flash_base_addr__)/(size_t)pbl->attr.page_size;	//page size is checked by start so safe
+		return (size_t)(fds_ptr - (uintptr_t)dartt_bl_get_flash_base())/(size_t)pbl->attr.page_size;	//page size is checked by start so safe
 	}
 	return 0;	//return invalid page index if something is wrong
 }
@@ -395,7 +396,7 @@ uint32_t dartt_bl_load_fds(dartt_bl_t * pbl)
 	{
 		return DARTT_BL_FDS_LOAD_FAILED;
 	}
-	if(p_fds + (uintptr_t)(sizeof(dartt_bl_persistent_t)) >= (uintptr_t)application_start_addr__)
+	if(p_fds + (uintptr_t)(sizeof(dartt_bl_persistent_t)) >= (uintptr_t)dartt_bl_get_app_start())
 	{
 		return DARTT_BL_FDS_LOAD_FAILED;
 	}
