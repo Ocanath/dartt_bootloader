@@ -12,6 +12,11 @@ The following symbols must be defined by the linker script:
 /*Our definitions.*/
 PAGE_SIZE = 0x800;
 BOOTLOADER_SIZE = 22K;
+
+/*
+Flash memory region definition - should inherit BOOTLOADER_SIZE
+*/
+
 flash_base_addr__ = ORIGIN(FLASH);
 application_start_addr__ = ORIGIN(FLASH) + BOOTLOADER_SIZE + PAGE_SIZE;
 ```
