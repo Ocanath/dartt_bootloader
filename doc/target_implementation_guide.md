@@ -6,24 +6,23 @@ This document covers everything required to bring up a new bootloader target. Al
 
 ## 1. Linker Symbols
 
-Two symbols must be defined by the linker script:
+The following symbols must be defined by the linker script:
 
 ```
-application_start_addr__
-flash_base_addr__
+/*Our definitions.*/
+PAGE_SIZE = 0x800;
+BOOTLOADER_SIZE = 22K;
+flash_base_addr__ = ORIGIN(FLASH);
+application_start_addr__ = ORIGIN(FLASH) + BOOTLOADER_SIZE + PAGE_SIZE;
 ```
+This defines the memory layout. The `BOOTLOADER_SIZE` may vary depending on the application. You *must* ensure that the application start address of the target to be flashed starts at the application start addr, or it will not work.
 
-These are declared as `extern const unsigned char *` in `dartt_bl_stubs.h` and must be compile-time constants resolved by the linker. They are not variables — do not define them in C.
+`flash_base_addr__` and `application_start_addr__` are externed in `dartt_bl_linker.c` and must be compile-time constants resolved by the linker. They are not variables — do not define them in C. Linker is source of truth for memory layout information.
 
 **`flash_base_addr__`** — the first address of flash memory on the target. On STM32 this is typically `0x08000000`.
 
 **`application_start_addr__`** — the first valid address for application code. This is `flash_base_addr__ + bootloader_size`. The bootloader partition size must be fixed and consistent across all applications targeting this bootloader build. All application linker scripts must use this same value as their flash origin.
 
-Example (GCC linker script):
-```
-flash_base_addr__        = 0x08000000;
-application_start_addr__ = 0x08004000;  /* 16KB bootloader partition */
-```
 
 These two symbols are used by the shared core for bootloader region protection on erase and write. Getting them wrong will either fail to protect the bootloader or block valid application operations.
 ### 1.1 Linker Memory Map

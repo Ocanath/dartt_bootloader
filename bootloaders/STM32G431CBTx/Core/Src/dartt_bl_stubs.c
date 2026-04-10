@@ -9,9 +9,6 @@
 #include "dartt.h"
 #include "m_dma_uart.h"
 
-const unsigned char * flash_base_addr__ = (const unsigned char *)(0x08000000);	//TODO: DELETE THIS, GENERATE VIA LINKER
-const unsigned char * application_start_addr__ = (const unsigned char *)(0x08003000);	//TODO: DELETE THIS, GENERATE VIA LINKER
-
 #define NUM_PAGES 		64
 #define PAGE_SIZE 		0x800
 #define WRITE_SIZE		8
