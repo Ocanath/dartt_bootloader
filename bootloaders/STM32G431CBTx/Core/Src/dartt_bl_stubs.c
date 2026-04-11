@@ -5,6 +5,7 @@
  *      Author: ocanath
  */
 #include "dartt_bl_stubs.h"
+#include "dartt_bl_linker.h"
 #include "cobs.h"
 #include "dartt.h"
 #include "m_dma_uart.h"
@@ -18,6 +19,10 @@ dartt_mem_t bootloader_alias = {
 		.buf = (unsigned char*)(&gl_bootloader),
 		.size = sizeof(gl_bootloader)
 };
+
+
+typedef void (*pFunction)(void); /*!< Function pointer definition */
+
 
 uint32_t dartt_bl_get_attributes(dartt_bl_t * pbl)
 {
@@ -77,11 +82,22 @@ uint32_t dartt_bl_handle_comms(dartt_bl_t * pbl)
 
 uint32_t dartt_bl_cleanup_system(void)
 {
+    HAL_RCC_DeInit();
+	HAL_DeInit();
 	return DARTT_BL_SUCCESS;
 }
 
 uint32_t dartt_bl_start_application(dartt_bl_t * pbl)
 {
+    uint32_t JumpAddress = *(__IO uint32_t*)(dartt_bl_get_app_start() + 4);
+    pFunction Jump       = (pFunction)JumpAddress;
+
+    SysTick->CTRL = 0;
+    SysTick->LOAD = 0;
+    SysTick->VAL  = 0;
+    SCB->VTOR = (__IO uint32_t)(dartt_bl_get_app_start());
+    __set_MSP(*(__IO uint32_t*)dartt_bl_get_app_start());
+    Jump();
 	return DARTT_BL_SUCCESS;
 }
 
