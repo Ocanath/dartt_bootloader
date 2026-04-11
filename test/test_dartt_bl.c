@@ -498,6 +498,79 @@ void test_get_version_hash(void)
 
 }
 
+void test_erase_multi_page(void)
+{
+	dartt_bl_t bootloader_ctl = {0};
+	dartt_bl_init(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
+	set_application_size(&bootloader_ctl);
+
+	for(size_t i = 0; i < sizeof(fake_application_area); i++)
+	{
+		fake_application_area[i] = i + 1;
+	}
+
+	bootloader_ctl.erase_page = 4;	// app_start page
+	bootloader_ctl.erase_num_pages = 3;
+	bootloader_ctl.action_flag = ERASE_PAGES;
+	dartt_bl_event_handler(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
+
+	// erased region should be 0xFF
+	for(size_t i = 0x400; i < 0x700; i++)
+	{
+		TEST_ASSERT_EQUAL(0xFF, fake_application_area[i]);
+	}
+	// byte before and after erased region should be untouched
+	TEST_ASSERT_NOT_EQUAL(0xFF, fake_application_area[0x3FF]);
+	TEST_ASSERT_NOT_EQUAL(0xFF, fake_application_area[0x700]);
+}
+
+void test_write_buffer_blocked_boundary(void)
+{
+	dartt_bl_t bootloader_ctl = {0};
+	dartt_bl_init(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
+	set_application_size(&bootloader_ctl);
+
+	// one byte before app_start: blocked
+	dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, dartt_bl_get_app_start() - 1);
+	bootloader_ctl.action_flag = SET_WORKING_ADDR;
+	dartt_bl_event_handler(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
+
+	bootloader_ctl.working_size = 8;
+	bootloader_ctl.action_flag = WRITE_BUFFER;
+	dartt_bl_event_handler(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+	TEST_ASSERT_EQUAL(DARTT_BL_WRITE_BLOCKED, (int32_t)bootloader_ctl.action_status);
+
+	// app_start itself: allowed
+	for(size_t i = 0; i < sizeof(fake_application_area); i++)
+	{
+		fake_application_area[i] = 0xFF;
+	}
+	dartt_bl_load_ptr_to_wbuf(&bootloader_ctl, dartt_bl_get_app_start());
+	bootloader_ctl.action_flag = SET_WORKING_ADDR;
+	dartt_bl_event_handler(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, bootloader_ctl.action_status);
+
+	bootloader_ctl.working_size = 8;
+	for(int i = 0; i < 8; i++)
+	{
+		bootloader_ctl.working_buffer[i] = 0xAA + i;
+	}
+	bootloader_ctl.action_flag = WRITE_BUFFER;
+	dartt_bl_event_handler(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+	TEST_ASSERT_EQUAL(DARTT_BL_SUCCESS, (int32_t)bootloader_ctl.action_status);
+	for(int i = 0; i < 8; i++)
+	{
+		TEST_ASSERT_EQUAL(0xAA + i, dartt_bl_get_app_start()[i]);
+	}
+}
+
 void test_persistent_settings_save(void)
 {
 	/*put a fake settings in*/
