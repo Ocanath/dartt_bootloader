@@ -82,6 +82,7 @@ uint32_t dartt_bl_handle_comms(dartt_bl_t * pbl)
 
 uint32_t dartt_bl_cleanup_system(void)
 {
+	__disable_irq();
     HAL_RCC_DeInit();
 	HAL_DeInit();
 	return DARTT_BL_SUCCESS;
