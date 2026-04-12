@@ -3,17 +3,17 @@
 #include "dartt_bl_persistent.h"
 
 enum {
-	NO_ACTION,
-	START_APPLICATION,	//action flag to start flashed application
-	READ_BUFFER, 	//dispatch flag for reading the target flash memory region into the working buffer. Check for error codes after each op
-	WRITE_BUFFER, 	//dispatch flag for writing the target flash memory region from the working buffer
-	ERASE_PAGES,	//dispatch flag for erasing the target page(s)
-	GET_CRC32,		//dispatch flag for get the CRC32 of the current flashed application
-	SAVE_SETTINGS,	//dispatch flag to write pbl->fds to the persistent settings flash page. Invalidates working_size and working_buffer on return
-	GET_VERSION_HASH,	//dispatch flag to load the --short version hash in to the working buffer	
-	GET_APPLICATION_START_ADDR,	//loads target-specific pointer into the working buffer
-	GET_WORKING_ADDR,	//loads the current working address pointer into the working buffer
-	SET_WORKING_ADDR	//loads contents of the current working buffer into the global, statically scoped working buffer pointer (target specific size)
+	NO_ACTION = 0,
+	START_APPLICATION = 1,	//action flag to start flashed application
+	READ_BUFFER = 2, 	//dispatch flag for reading the target flash memory region into the working buffer. Check for error codes after each op
+	WRITE_BUFFER = 3, 	//dispatch flag for writing the target flash memory region from the working buffer
+	ERASE_PAGES = 4,	//dispatch flag for erasing the target page(s)
+	GET_CRC32 = 5,		//dispatch flag for get the CRC32 of the current flashed application
+	SAVE_SETTINGS = 6,	//dispatch flag to write pbl->fds to the persistent settings flash page. Invalidates working_size and working_buffer on return
+	GET_VERSION_HASH = 7,	//dispatch flag to load the --short version hash in to the working buffer
+	GET_APPLICATION_START_ADDR = 8,	//loads target-specific pointer into the working buffer
+	GET_WORKING_ADDR = 9,	//loads the current working address pointer into the working buffer
+	SET_WORKING_ADDR = 10	//loads contents of the current working buffer into the global, statically scoped working buffer pointer (target specific size)
 };
 
 enum {
