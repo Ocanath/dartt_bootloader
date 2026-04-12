@@ -13,6 +13,7 @@ add_subdirectory(external/byte-stuffing)
 add_executable(dartt_flashing_tool
     flashing_tool/src/main.cpp
 	flashing_tool/src/args.cpp
+	flashing_tool/src/dartt_flasher.cpp
 )
 
 target_include_directories(dartt_flashing_tool PRIVATE
