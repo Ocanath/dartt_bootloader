@@ -6,6 +6,7 @@
  */
 #include "dartt_bl_stubs.h"
 #include "dartt_bl_linker.h"
+#include "init.h"
 #include "cobs.h"
 #include "dartt.h"
 #include "m_dma_uart.h"
@@ -83,6 +84,9 @@ uint32_t dartt_bl_handle_comms(dartt_bl_t * pbl)
 uint32_t dartt_bl_cleanup_system(void)
 {
 	__disable_irq();
+	HAL_DMA_DeInit(&hdma_usart2_rx);
+	HAL_DMA_DeInit(&hdma_usart2_tx);
+	HAL_UART_DeInit(&huart2);
     HAL_RCC_DeInit();
 	HAL_DeInit();
 	return DARTT_BL_SUCCESS;
@@ -98,6 +102,7 @@ uint32_t dartt_bl_start_application(dartt_bl_t * pbl)
     SysTick->VAL  = 0;
     SCB->VTOR = (__IO uint32_t)(dartt_bl_get_app_start());
     __set_MSP(*(__IO uint32_t*)dartt_bl_get_app_start());
+    __enable_irq();
     Jump();
 	return DARTT_BL_SUCCESS;
 }
