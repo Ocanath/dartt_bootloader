@@ -84,9 +84,9 @@ uint32_t dartt_bl_handle_comms(dartt_bl_t * pbl)
 uint32_t dartt_bl_cleanup_system(void)
 {
 	__disable_irq();
-	HAL_DMA_DeInit(&hdma_usart2_rx);
-	HAL_DMA_DeInit(&hdma_usart2_tx);
-	HAL_UART_DeInit(&huart2);
+//	HAL_DMA_DeInit(&hdma_usart2_rx);
+//	HAL_DMA_DeInit(&hdma_usart2_tx);
+//	HAL_UART_DeInit(&huart2);
     HAL_RCC_DeInit();
 	HAL_DeInit();
 	return DARTT_BL_SUCCESS;
