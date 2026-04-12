@@ -27,6 +27,7 @@ target_include_directories(dartt_flashing_tool PRIVATE
 
 target_link_libraries(dartt_flashing_tool PRIVATE
     dartt_protocol
+	dartt_checksum
     serial
     cobs
 )
