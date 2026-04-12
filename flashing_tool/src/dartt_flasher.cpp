@@ -1,5 +1,6 @@
 #include "dartt_flasher.h"
 #include "callbacks.h"
+#include <string.h>
 
 DarttFlasher::DarttFlasher(unsigned char addr)
 {
@@ -19,6 +20,15 @@ DarttFlasher::DarttFlasher(unsigned char addr)
 	ds.blocking_rx_callback = &_rx_blocking_callback;
 	ds.user_context_rx = (void*)(&ser);
 	ds.timeout_ms = 10;
+
+	ds.ctl_base.buf = (unsigned char *)(&bootloader_control);
+	ds.ctl_base.size = sizeof(bootloader_control);
+
+	ds.periph_base.buf = (unsigned char *)(&bootloader_periph);
+	ds.periph_base.size = sizeof(bootloader_periph);
+
+	memset(ds.ctl_base.buf, 0, ds.ctl_base.size);
+	memset(ds.periph_base.buf, 0, ds.periph_base.size);
 
 }
 
