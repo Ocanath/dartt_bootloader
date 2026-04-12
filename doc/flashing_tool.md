@@ -98,6 +98,14 @@ dartt_flash 10 --version
 
 This dispatches the action of loading the working buffer with the git version, which the flashing tool retrieves and prints once finished polling the action registers. The tool will return immediately after obtaining the version.
 
+## Baud Rate
+
+The default baudrate is 921600. To specify a new baudrate, use the `--baudrate` argument, ex.
+
+```bash
+dartt_flash 10 program.elf --baudrate 230400
+```
+
 ---
 ## Implementation Notes
 
