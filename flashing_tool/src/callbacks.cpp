@@ -4,8 +4,6 @@
 TODO: move the callbacks fully into this scope, hiding it from other TU's
 This means hiding sizes, dynamically allocating the tx and rx buffers, a destructor
 */
-#define _AUDIO_SERIAL_BUFFER_SIZE 32
-#define _AUDIO_NUM_BYTES_COBS_OVERHEAD	2	//give cobs room to operate
 
 
 int _tx_blocking_callback(unsigned char addr, dartt_buffer_t * b, void * user_context, uint32_t timeout)
@@ -21,7 +19,7 @@ int _tx_blocking_callback(unsigned char addr, dartt_buffer_t * b, void * user_co
 	}
 	cobs_buf_t cb = {
 		.buf = b->buf,
-		.size = _AUDIO_SERIAL_BUFFER_SIZE,	//important! this has to be the true size - b doesn't know what size it actually has. Use SERIAL_BUFFER_SIZE as source of truth for size since sizeof(var) is out of scope
+		.size = _DARTT_SERIAL_BUFFER_SIZE,	//important! this has to be the true size - b doesn't know what size it actually has. Use SERIAL_BUFFER_SIZE as source of truth for size since sizeof(var) is out of scope
 		.length = b->len,
 		.encoded_state = COBS_DECODED
 	};
@@ -57,7 +55,7 @@ int _rx_blocking_callback(dartt_buffer_t * buf, void * user_context, uint32_t ti
 	cobs_buf_t cb_enc =
 	{
 		.buf = buf->buf,
-		.size = _AUDIO_SERIAL_BUFFER_SIZE,	//important! this has to be the true size - b doesn't know what size it actually has. Use SERIAL_BUFFER_SIZE as source of truth for size since sizeof(var) is out of scope
+		.size = _DARTT_SERIAL_BUFFER_SIZE,	//important! this has to be the true size - b doesn't know what size it actually has. Use SERIAL_BUFFER_SIZE as source of truth for size since sizeof(var) is out of scope
 		.length = 0
 	};
 

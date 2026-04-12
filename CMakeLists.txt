@@ -14,14 +14,15 @@ add_executable(dartt_flashing_tool
     flashing_tool/src/main.cpp
 	flashing_tool/src/args.cpp
 	flashing_tool/src/dartt_flasher.cpp
+	flashing_tool/src/callbacks.cpp
 )
 
 target_include_directories(dartt_flashing_tool PRIVATE
     flashing_tool/src
     external/dartt-protocol/src
 	external/byte-stuffing/C-COBS
-	shared
 	external/ELFIO
+	shared
 )
 
 target_link_libraries(dartt_flashing_tool PRIVATE
