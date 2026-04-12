@@ -27,3 +27,11 @@ target_link_libraries(dartt_flashing_tool PRIVATE
     serial
     cobs
 )
+
+add_custom_target(generate_version ALL
+    COMMAND ruby ${CMAKE_SOURCE_DIR}/scripts/run_get_version.rb
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
+    COMMENT "Generating version.h"
+)
+
+add_dependencies(dartt_flashing_tool generate_version)

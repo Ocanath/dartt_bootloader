@@ -2,6 +2,8 @@
 #include "serial.h"
 #include "dartt_sync.h"
 #include "args.h"
+#include "dartt_bl.h"
+#include "version.h"
 
 int main(int argc, char** argv)
 {
