@@ -20,6 +20,7 @@ target_include_directories(dartt_flashing_tool PRIVATE
     external/dartt-protocol/src
 	external/byte-stuffing/C-COBS
 	shared
+	external/ELFIO
 )
 
 target_link_libraries(dartt_flashing_tool PRIVATE
