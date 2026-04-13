@@ -11,20 +11,31 @@
 int main(int argc, char** argv)
 {
 	args_t args = parse_args(argc, argv);
+	if(args.get_version)
+	{
+		printf("Flashing Tool Version: %s\n", firmware_version);
+	}
+
 	DarttFlasher flasher(args.dartt_address);
 	flasher.ser.autoconnect(921600);
 
-	std::string version;
-	int rc = flasher.get_version(version);	
-	if(rc == 0)
+
+	if(args.get_version)
 	{
-		printf("Got version success\n");
-		printf("%s\n",version.c_str());
+		std::string version;
+		int rc = flasher.get_version(version);	
+		if(rc == 0)
+		{
+			printf("Bootloader Device Version: ");
+			printf("%s\n",version.c_str());
+		}
+		else
+		{
+			printf("Error: code %d\n", rc);
+			return rc;
+		}
 	}
-	else
-	{
-		printf("Error: code %d\n", rc);
-	}
+
 	return 0;
 }
 

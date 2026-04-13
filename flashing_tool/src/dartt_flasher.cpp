@@ -20,7 +20,7 @@ DarttFlasher::DarttFlasher(unsigned char addr)
 	ds.user_context_tx = (void*)(&ser);
 	ds.blocking_rx_callback = &_rx_blocking_callback;
 	ds.user_context_rx = (void*)(&ser);
-	ds.timeout_ms = 10;
+	ds.timeout_ms = 100;
 
 	ds.ctl_base.buf = (unsigned char *)(&bootloader_control);
 	ds.ctl_base.size = sizeof(bootloader_control);
