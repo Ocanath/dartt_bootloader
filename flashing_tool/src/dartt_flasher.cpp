@@ -44,6 +44,7 @@ DarttFlasher::~DarttFlasher()
 {
 	delete[] tx_buf_mem;
 	delete[] rx_buf_mem;
+	ser.disconnect();
 }
 
 int DarttFlasher::poll_action_flags(uint32_t timeout_ms)
