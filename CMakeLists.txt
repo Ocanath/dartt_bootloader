@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(dartt_flashing_tool C CXX)
+project(dartt_flash C CXX)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
@@ -10,7 +10,7 @@ add_subdirectory(external/dartt-protocol)
 add_subdirectory(external/serial-cross-platform)
 add_subdirectory(external/byte-stuffing)
 
-add_executable(dartt_flashing_tool
+add_executable(dartt_flash
     flashing_tool/src/main.cpp
 	flashing_tool/src/args.cpp
 	flashing_tool/src/dartt_flasher.cpp
@@ -18,7 +18,7 @@ add_executable(dartt_flashing_tool
 	flashing_tool/src/milliseconds.cpp
 )
 
-target_include_directories(dartt_flashing_tool PRIVATE
+target_include_directories(dartt_flash PRIVATE
     flashing_tool/src
     external/dartt-protocol/src
 	external/byte-stuffing/C-COBS
@@ -26,7 +26,7 @@ target_include_directories(dartt_flashing_tool PRIVATE
 	shared
 )
 
-target_link_libraries(dartt_flashing_tool PRIVATE
+target_link_libraries(dartt_flash PRIVATE
     dartt_protocol
 	dartt_checksum
     serial
@@ -39,4 +39,4 @@ add_custom_target(generate_version ALL
     COMMENT "Generating version.h"
 )
 
-add_dependencies(dartt_flashing_tool generate_version)
+add_dependencies(dartt_flash generate_version)
