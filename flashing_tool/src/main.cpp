@@ -14,11 +14,13 @@ int main(int argc, char** argv)
 	DarttFlasher flasher(args.dartt_address);
 	flasher.ser.autoconnect(921600);
 	flasher.bootloader_control.action_flag = START_APPLICATION;
-	dartt_buffer_t ctl = 
+	dartt_mem_t ctl = 
 	{
 		.buf = (unsigned char *)(&flasher.bootloader_control.action_flag), 
-		.size = sizeof(uint32_t), 
-		.len = sizeof(uint32_t)
+		.size = sizeof(uint32_t)
 	};
-	dartt_sync(&ctl, &flasher.ds);
+	
+	dartt_read_multi(&ctl, &flasher.ds);
+	return 0;
 }
+
