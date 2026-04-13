@@ -1,6 +1,7 @@
 #include "dartt_flasher.h"
 #include "callbacks.h"
 #include <string.h>
+#include "milliseconds.h"
 
 DarttFlasher::DarttFlasher(unsigned char addr)
 {
@@ -30,6 +31,13 @@ DarttFlasher::DarttFlasher(unsigned char addr)
 	memset(ds.ctl_base.buf, 0, ds.ctl_base.size);
 	memset(ds.periph_base.buf, 0, ds.periph_base.size);
 
+	action_flags.buf = (unsigned char *)(&bootloader_control.action_flag);
+	action_flags.size = 2*sizeof(uint32_t);
+
+	working_buffer.buf = (unsigned char *)(&bootloader_control.working_size);
+	working_buffer.size = sizeof(bootloader_control.working_size)+sizeof(bootloader_control.working_buffer);
+
+	timeout = 2000;
 }
 
 DarttFlasher::~DarttFlasher()
@@ -38,3 +46,66 @@ DarttFlasher::~DarttFlasher()
 	delete[] rx_buf_mem;
 }
 
+int DarttFlasher::poll_action_flags(uint32_t timeout_ms)
+{
+	uint32_t start_ts = get_tick32();
+
+	while(get_tick32() - start_ts < timeout_ms)
+	{
+		int rc = dartt_read_multi(&action_flags, &ds);
+		if(rc != DARTT_PROTOCOL_SUCCESS)
+		{
+			return rc;
+		}
+		int32_t action_status = (int32_t)bootloader_periph.action_status;
+		if(bootloader_periph.action_flag == 0)
+		{
+			if(action_status == 0)
+			{
+				return FLASHER_SUCCESS;
+			}
+			else 
+			{
+				return (int)action_status;
+			}
+		}
+	}
+	return	ERROR_TIMEOUT;
+}
+
+int DarttFlasher::write_action_flag(uint32_t flag)
+{
+	bootloader_control.action_flag = flag;
+	bootloader_periph.action_flag = bootloader_control.action_flag;	//load to peripheral copy so poll works without issues
+	bootloader_periph.action_status = 0;
+	return dartt_write_multi(&action_flags, &ds);
+}
+
+
+int DarttFlasher::get_version(std::string & version)
+{
+	int rc = write_action_flag(GET_VERSION_HASH);
+	if(rc != FLASHER_SUCCESS)
+	{
+		return rc;
+	}
+
+	rc = poll_action_flags(timeout);
+	if(rc != FLASHER_SUCCESS)
+	{
+		return rc;
+	}
+
+
+	rc = dartt_read_multi(&working_buffer, &ds);
+	if(bootloader_periph.working_size < 7)
+	{
+		return ERROR_VERSION_RETRIEVAL_FAILED;
+	}
+
+	version.assign(
+		(const char*)(bootloader_periph.working_buffer),
+		bootloader_periph.working_size
+	);
+	return 0;
+}

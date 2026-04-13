@@ -13,14 +13,18 @@ int main(int argc, char** argv)
 	args_t args = parse_args(argc, argv);
 	DarttFlasher flasher(args.dartt_address);
 	flasher.ser.autoconnect(921600);
-	flasher.bootloader_control.action_flag = START_APPLICATION;
-	dartt_mem_t ctl = 
+
+	std::string version;
+	int rc = flasher.get_version(version);	
+	if(rc == 0)
 	{
-		.buf = (unsigned char *)(&flasher.bootloader_control.action_flag), 
-		.size = sizeof(uint32_t)
-	};
-	
-	dartt_read_multi(&ctl, &flasher.ds);
+		printf("Got version success\n");
+		printf("%s\n",version.c_str());
+	}
+	else
+	{
+		printf("Error: code %d\n", rc);
+	}
 	return 0;
 }
 
