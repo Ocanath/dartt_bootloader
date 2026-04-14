@@ -28,7 +28,8 @@ class DarttFlasher
 			ERROR_PTR_RETRIEVAL_FAILED = -102,
 			ERROR_INVALID_ARGUMENT = -103,
 			ERROR_POINTERSIZE_NOT_LOADED = -104,
-			
+			ERROR_MEMORY_OVERRUN = -105,
+			ERROR_POINTERSIZE_TOO_LARGE = -106
 		};
 
 	private:
@@ -51,7 +52,7 @@ class DarttFlasher
 		int write_action_flag(uint32_t flag);	//helper to load control with proper flags before dispatch. called before poll
 		uintptr_t get_pointer(uint32_t flag);
 		int set_working_pointer(uintptr_t pointer);
-
+		int write_working_buffer(void);
 };
 
 #endif

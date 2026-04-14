@@ -39,6 +39,7 @@ DarttFlasher::DarttFlasher(unsigned char addr)
 	working_buffer.size = sizeof(bootloader_control.working_size)+sizeof(bootloader_control.working_buffer);
 
 	timeout = 2000;
+	target_pointer_size = 0;
 }
 
 DarttFlasher::~DarttFlasher()
@@ -160,7 +161,38 @@ int DarttFlasher::get_target_pointer_size(void)
 	{
 		return ERROR_POINTERSIZE_NOT_LOADED;
 	}
-	target_pointer_size = (size_t)bootloader_periph.working_size;
+	target_pointer_size = (size_t)(bootloader_periph.working_size);
+	return FLASHER_SUCCESS;
+}
+
+/*
+Helper to update the working buffer.
+
+The size parameter of the controller is used to make the operation more efficient.
+
+Order of operations:
+
+This triggers:
+1. read of the relevant range, determined by write size. 
+2. write of only bytewise deltas betwee ctl and periph
+3. readback of written deltas to confirm they were written
+
+*/
+int DarttFlasher::write_working_buffer(void)
+{
+	dartt_mem_t range = working_buffer;	//make a local copy of the working buffer
+	range.size = sizeof(bootloader_control.working_size) + (size_t)bootloader_control.working_size;
+
+	int rc = dartt_read_multi(&working_buffer, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS)
+	{
+		return rc;
+	}
+	rc = dartt_sync(&working_buffer, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS)
+	{
+		return rc;
+	}
 	return FLASHER_SUCCESS;
 }
 
@@ -170,19 +202,23 @@ int DarttFlasher::set_working_pointer(uintptr_t pointer)
 	{
 		return ERROR_POINTERSIZE_NOT_LOADED;
 	}
+	if(target_pointer_size > sizeof(bootloader_control.working_buffer))
+	{
+		printf("Error: pointer size too large! Size is %d\n", target_pointer_size);
+		return ERROR_MEMORY_OVERRUN;
+	}
+	if(target_pointer_size > sizeof(uintptr_t))
+	{
+		return ERROR_POINTERSIZE_TOO_LARGE;
+	}
 	bootloader_control.working_size = target_pointer_size;
 	for(size_t i = 0; i < target_pointer_size; i++)
 	{
 		int shift = (i*8);
 		bootloader_control.working_buffer[i] = (pointer & (0xFF << shift)) >> shift;
 	}
-	int rc = dartt_read_multi(&working_buffer, &ds);
-	if(rc != DARTT_PROTOCOL_SUCCESS)
-	{
-		return rc;
-	}
-	rc = dartt_sync(&working_buffer, &ds);
-	if(rc != DARTT_PROTOCOL_SUCCESS)
+	int rc = write_working_buffer();
+	if(rc != FLASHER_SUCCESS)
 	{
 		return rc;
 	}
