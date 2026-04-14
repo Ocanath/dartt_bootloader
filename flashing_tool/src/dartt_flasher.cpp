@@ -130,11 +130,7 @@ int DarttFlasher::write_action_flag(uint32_t flag)
 	{
 		return rc;
 	}
-	rc = poll_action_flags(timeout);
-	if(rc != FLASHER_SUCCESS)
-	{
-		return rc;
-	}
+	return poll_action_flags(timeout);
 }
 
 int DarttFlasher::get_version(std::string & version)
