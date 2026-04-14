@@ -459,6 +459,11 @@ int DarttFlasher::write_bin(const std::string & path)
 	{
 		return ERROR_LOAD_FAILED;
 	}
+	
+	//finally, save app size so the crc32 calc is correct
+	rc = write_action_flag(SAVE_SETTINGS);
+	if(rc != FLASHER_SUCCESS){return rc;}
+
 	printf("Flashing Done!\n");
 	return FLASHER_SUCCESS;
 }
