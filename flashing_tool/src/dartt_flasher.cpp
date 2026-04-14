@@ -355,8 +355,10 @@ int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
 	}
 	if(nbytes_remainder != 0)
 	{
+		size_t padded_size = ((nbytes_remainder + attr_cpy.write_size - 1)/attr_cpy.write_size)*attr_cpy.write_size;
+		memset(bootloader_control.working_buffer, 0xFF, padded_size);
 		memcpy(bootloader_control.working_buffer, &bin[num_max_writes*max_write_size], nbytes_remainder);
-		bootloader_control.working_size = nbytes_remainder;
+		bootloader_control.working_size = padded_size;
 		rc = write_working_buffer();
 		if(rc != FLASHER_SUCCESS){return rc;}
 		rc = write_action_flag(WRITE_BUFFER);
