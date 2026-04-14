@@ -112,6 +112,11 @@ void dartt_bl_event_handler(dartt_bl_t * pbl)
 				pbl->action_status = dartt_bl_load_ptr_to_wbuf(pbl, working_target_ptr_);
 				break;
 			}
+			case GET_FLASH_BASE_ADDR:
+			{
+				pbl->action_status = dartt_bl_load_ptr_to_wbuf(pbl, dartt_bl_get_flash_base());
+				break;
+			}
 			case SET_WORKING_ADDR:
 			{
 				pbl->action_status = dartt_bl_load_wbuf_to_ptr(pbl, &working_target_ptr_);

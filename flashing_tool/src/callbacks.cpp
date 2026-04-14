@@ -68,7 +68,7 @@ int _rx_blocking_callback(dartt_buffer_t * buf, void * user_context, uint32_t ti
 	}
 	else if (rc == -2)
 	{
-		return -7;
+		return DARTT_READ_CALLBACK_TIMEOUT;
 	}
 	else
 	{

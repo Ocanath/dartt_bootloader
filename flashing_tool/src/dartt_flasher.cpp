@@ -22,7 +22,7 @@ DarttFlasher::DarttFlasher(unsigned char addr)
 	ds.user_context_tx = (void*)(&ser);
 	ds.blocking_rx_callback = &_rx_blocking_callback;
 	ds.user_context_rx = (void*)(&ser);
-	ds.timeout_ms = 100;
+	ds.timeout_ms = 1000;
 
 	ds.ctl_base.buf = (unsigned char *)(&bootloader_control);
 	ds.ctl_base.size = sizeof(bootloader_control);
@@ -86,8 +86,9 @@ int DarttFlasher::poll_action_flags(uint32_t timeout_ms)
 	while(get_tick32() - start_ts < timeout_ms)
 	{
 		int rc = dartt_read_multi(&action_flags, &ds);
-		if(rc != DARTT_PROTOCOL_SUCCESS)
+		if(rc != DARTT_PROTOCOL_SUCCESS && rc != DARTT_READ_CALLBACK_TIMEOUT)
 		{
+			//read timeouts are allowed on poll, because some operations block the event loop from handling a read request properly
 			return rc;
 		}
 		int32_t action_status = (int32_t)bootloader_periph.action_status;
@@ -148,7 +149,7 @@ Helper to get pointer. Flag must be either get working addr or get app start add
 */
 uintptr_t DarttFlasher::get_pointer(uint32_t flag)
 {
-	if(flag != GET_WORKING_ADDR && flag != GET_APPLICATION_START_ADDR)
+	if(flag != GET_WORKING_ADDR && flag != GET_APPLICATION_START_ADDR && flag != GET_FLASH_BASE_ADDR)
 	{
 		return 0;
 	}
@@ -268,11 +269,18 @@ int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
 		return ERROR_NOT_INITIALIZED;
 	}
 	int rc;
+
 	uintptr_t app_start = get_pointer(GET_APPLICATION_START_ADDR);
 	if(app_start == 0)
 	{
 		return ERROR_PTR_RETRIEVAL_FAILED;
 	}
+	uintptr_t flash_start = get_pointer(GET_FLASH_BASE_ADDR);
+	if(flash_start == 0)
+	{
+		return ERROR_PTR_RETRIEVAL_FAILED;
+	}
+	printf("Flash start at location 0x%lX\n", flash_start);
 
 	rc = write_action_flag(SET_WORKING_ADDR);
 	if(rc != FLASHER_SUCCESS){return rc;}
@@ -285,12 +293,26 @@ int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
 	printf("App start and working pointer match at 0x%lX\n", app_start);
 
 
-
+	
 	
 
+	size_t max_write_size = (sizeof(bootloader_control.working_buffer)/attr_cpy.write_size)*attr_cpy.write_size;	//floor division and reinflation yields max write size. Since working buffer is 64, this probably always yields 64
+	size_t num_max_writes = len/max_write_size;
+	size_t nbytes_remainder = len % max_write_size;	//number of bytes in the tail/final write. must pad up to write size
 
+	for(size_t i = 0; i < num_max_writes; i++)
+	{
+		size_t bin_offset = i*max_write_size;
+		memcpy(bootloader_control.working_buffer, &bin[bin_offset], max_write_size);
+		bootloader_control.working_size = max_write_size;
+		rc = write_working_buffer();
+		if(rc != FLASHER_SUCCESS)
+		{
+			return rc;
+		}
+		rc = write_action_flag(WRITE_BUFFER);
 
-
+	}
 
 	working_addr = working_addr + 8;
 	rc = set_working_pointer(working_addr);

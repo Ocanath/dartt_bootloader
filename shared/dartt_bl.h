@@ -18,7 +18,8 @@ enum {
 	GET_VERSION_HASH = 7,	//dispatch flag to load the --short version hash in to the working buffer
 	GET_APPLICATION_START_ADDR = 8,	//loads target-specific pointer into the working buffer
 	GET_WORKING_ADDR = 9,	//loads the current working address pointer into the working buffer
-	SET_WORKING_ADDR = 10	//loads contents of the current working buffer into the global, statically scoped working buffer pointer (target specific size)
+	SET_WORKING_ADDR = 10,	//loads contents of the current working buffer into the global, statically scoped working buffer pointer (target specific size)
+	GET_FLASH_BASE_ADDR = 11	//loads the current flash base pointer into the working buffer
 };
 
 enum {
