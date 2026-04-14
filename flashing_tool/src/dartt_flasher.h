@@ -33,7 +33,8 @@ class DarttFlasher
 			ERROR_MEMORY_OVERRUN = -105,
 			ERROR_POINTERSIZE_TOO_LARGE = -106,
 			ERROR_ALREADY_INITIALIZED = -107,
-			ERROR_NOT_INITIALIZED = -108
+			ERROR_NOT_INITIALIZED = -108,
+			ERROR_NOTHING_TO_ERASE = -109
 		};
 
 	private:
@@ -63,6 +64,7 @@ class DarttFlasher
 		int set_working_pointer(uintptr_t pointer);
 		int write_working_buffer(void);
 		int get_page_idx_of_pointer(uintptr_t pointer, uint32_t & page_idx);
+		int erase_blob(uintptr_t start, size_t size);
 };
 
 #endif

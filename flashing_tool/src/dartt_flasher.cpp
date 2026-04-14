@@ -125,9 +125,17 @@ int DarttFlasher::write_action_flag(uint32_t flag)
 	bootloader_control.action_flag = flag;
 	bootloader_periph.action_flag = bootloader_control.action_flag;	//load to peripheral copy so poll works without issues
 	bootloader_periph.action_status = 0;
-	return dartt_write_multi(&action_flags, &ds);
+	int rc = dartt_write_multi(&action_flags, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS)
+	{
+		return rc;
+	}
+	rc = poll_action_flags(timeout);
+	if(rc != FLASHER_SUCCESS)
+	{
+		return rc;
+	}
 }
-
 
 int DarttFlasher::get_version(std::string & version)
 {
@@ -137,11 +145,7 @@ int DarttFlasher::get_version(std::string & version)
 		return rc;
 	}
 
-	rc = poll_action_flags(timeout);
-	if(rc != FLASHER_SUCCESS)
-	{
-		return rc;
-	}
+
 
 
 	rc = dartt_read_multi(&working_buffer, &ds);
@@ -169,12 +173,6 @@ uintptr_t DarttFlasher::get_pointer(uint32_t flag)
 
 	bootloader_periph.working_size = 0;
 	int rc = write_action_flag(flag);
-	if(rc != FLASHER_SUCCESS)
-	{
-		return 0;
-	}
-
-	rc = poll_action_flags(timeout);
 	if(rc != FLASHER_SUCCESS)
 	{
 		return 0;
@@ -290,6 +288,28 @@ int DarttFlasher::get_page_idx_of_pointer(uintptr_t pointer, uint32_t & page_idx
 	return FLASHER_SUCCESS;
 }
 
+int DarttFlasher::erase_blob(uintptr_t start, size_t len)
+{
+	if(initialized == false)
+	{
+		return ERROR_NOT_INITIALIZED;
+	}
+	int rc = get_page_idx_of_pointer(start, bootloader_control.erase_page);
+	if(rc != FLASHER_SUCCESS){return rc;}
+	uint32_t last_page_idx = 0;
+	rc = get_page_idx_of_pointer(start + len, last_page_idx);
+	if(rc != FLASHER_SUCCESS){return rc;}
+	bootloader_control.erase_num_pages = last_page_idx - bootloader_control.erase_page;
+	printf("Start page: %d\n", bootloader_control.erase_page);
+	printf("Num pages: %d\n", bootloader_control.erase_num_pages);	
+	if(bootloader_control.erase_num_pages == 0)
+	{
+		return ERROR_NOTHING_TO_ERASE;
+	}
+	//dispatch erase
+	return write_action_flag(ERASE_PAGES);
+}
+
 /*
 	Helper for writing raw binary data to the target
 */
@@ -300,28 +320,18 @@ int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
 		return ERROR_NOT_INITIALIZED;
 	}
 	int rc;
-	printf("Flash start at location 0x%lX\n", flash_start);
 
+	printf("Flash start at location 0x%lX\n", flash_start);
 	rc = set_working_pointer(app_start);
 	if(rc != FLASHER_SUCCESS){return rc;}
-
-	uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);
+	uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);	//redundant - set working pointer reads back changes. However it's kind of nice to confirm read works properly
 	if(app_start != working_addr)
-	{
-		printf("Error: issue loading working pointer at location 0x%lX\n", app_start);
-	}
-	printf("App start and working pointer match at 0x%lX\n", app_start);
+	{return ERROR_PTR_RETRIEVAL_FAILED;}
 
+	//pre-erase the whole target region for incremental write
+	rc = erase_blob(app_start, len);	
+	if(rc != FLASHER_SUCCESS){return rc;}
 	
-	rc = get_page_idx_of_pointer(app_start, bootloader_control.erase_page);
-	if(rc != FLASHER_SUCCESS){return rc;}
-	uint32_t last_page_idx = 0;
-	rc = get_page_idx_of_pointer(app_start + len, last_page_idx);
-	if(rc != FLASHER_SUCCESS){return rc;}
-	bootloader_control.erase_num_pages = last_page_idx - bootloader_control.erase_page;
-	printf("Start page: %d\n", bootloader_control.erase_page);
-	printf("Num pages: %d\n", bootloader_control.erase_num_pages);	
-
 	size_t max_write_size = (sizeof(bootloader_control.working_buffer)/attr_cpy.write_size)*attr_cpy.write_size;	//floor division and reinflation yields max write size. Since working buffer is 64, this probably always yields 64
 	size_t num_max_writes = len/max_write_size;
 	size_t nbytes_remainder = len % max_write_size;	//number of bytes in the tail/final write. must pad up to write size
@@ -337,23 +347,21 @@ int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
 			return rc;
 		}
 		rc = write_action_flag(WRITE_BUFFER);
+		if(rc != FLASHER_SUCCESS){return rc;}	
 
+		working_addr += max_write_size;
+		rc = set_working_pointer(working_addr);
+		if(rc != FLASHER_SUCCESS){return rc;}	//this uses sync which is redundant
 	}
-
-	working_addr = working_addr + 8;
-	rc = set_working_pointer(working_addr);
-	if(rc != DARTT_PROTOCOL_SUCCESS)
+	if(nbytes_remainder != 0)
 	{
-		printf("Sync error %d\n", rc);
-		return rc;
+		memcpy(bootloader_control.working_buffer, &bin[num_max_writes*max_write_size], nbytes_remainder);
+		bootloader_control.working_size = nbytes_remainder;
+		rc = write_working_buffer();
+		if(rc != FLASHER_SUCCESS){return rc;}
+		rc = write_action_flag(WRITE_BUFFER);
+		if(rc != FLASHER_SUCCESS){return rc;}
 	}
-	uintptr_t check = get_pointer(GET_WORKING_ADDR);
-	if(check != working_addr)
-	{
-		printf("False positive sync success. working pointer load failed\n");
 
-		return ERROR_PTR_RETRIEVAL_FAILED;
-	}
-	printf("everything worked - working pointer now at 0x%lX\n", working_addr);
-	return 0;
+	return FLASHER_SUCCESS;
 }
