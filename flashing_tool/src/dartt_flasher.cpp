@@ -300,8 +300,6 @@ int DarttFlasher::erase_blob(uintptr_t start, size_t len)
 	rc = get_page_idx_of_pointer(start + len, last_page_idx);
 	if(rc != FLASHER_SUCCESS){return rc;}
 	bootloader_control.erase_num_pages = last_page_idx - bootloader_control.erase_page;
-	printf("Start page: %d\n", bootloader_control.erase_page);
-	printf("Num pages: %d\n", bootloader_control.erase_num_pages);	
 	if(bootloader_control.erase_num_pages == 0)
 	{
 		return ERROR_NOTHING_TO_ERASE;
@@ -365,6 +363,7 @@ int DarttFlasher::write_bin(const std::string & path)
 	}
 	printf("Writing file %s\n", path.c_str());
 	size_t len = (size_t)file.tellg();
+	printf("File size %lu bytes\n", (unsigned long)len);
 	file.seekg(0);
 	int rc;
 
@@ -376,8 +375,10 @@ int DarttFlasher::write_bin(const std::string & path)
 	{return ERROR_PTR_RETRIEVAL_FAILED;}
 
 	//pre-erase the whole target region for incremental write
+	printf("Pre-erasing application region, starting at 0x%lX...\n", (unsigned long)app_start);
 	rc = erase_blob(app_start, len);	
 	if(rc != FLASHER_SUCCESS){return rc;}
+	printf("Success!\n");
 	
 	size_t max_write_size = (sizeof(bootloader_control.working_buffer)/attr_cpy.write_size)*attr_cpy.write_size;	//floor division and reinflation yields max write size. Since working buffer is 64, this probably always yields 64
 	size_t num_max_writes = len/max_write_size;
@@ -385,6 +386,7 @@ int DarttFlasher::write_bin(const std::string & path)
 
 	for(size_t i = 0; i < num_max_writes; i++)
 	{
+		printf("Writing chunk %lu, %lu bytes\n", (unsigned long)i, (unsigned long)max_write_size);
 		file.read(reinterpret_cast<char*>(bootloader_control.working_buffer), max_write_size);
 		bootloader_control.working_size = max_write_size;
 		rc = write_working_buffer();
@@ -402,6 +404,15 @@ int DarttFlasher::write_bin(const std::string & path)
 	if(nbytes_remainder != 0)
 	{
 		size_t padded_size = ((nbytes_remainder + attr_cpy.write_size - 1)/attr_cpy.write_size)*attr_cpy.write_size;
+		printf("Writing final chunk %lu bytes", (unsigned long)padded_size);
+		if(padded_size == nbytes_remainder)
+		{
+			printf("\n");
+		}
+		else
+		{
+			printf("(padded from %lu)\n", (unsigned long)nbytes_remainder);
+		}
 		memset(bootloader_control.working_buffer, 0xFF, padded_size);
 		file.read(reinterpret_cast<char*>(bootloader_control.working_buffer), nbytes_remainder);
 		bootloader_control.working_size = padded_size;
