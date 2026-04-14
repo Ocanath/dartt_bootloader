@@ -164,7 +164,7 @@ int DarttFlasher::get_target_pointer_size(void)
 	return FLASHER_SUCCESS;
 }
 
-int DarttFlasher::set_pointer(uintptr_t pointer)
+int DarttFlasher::set_working_pointer(uintptr_t pointer)
 {
 	if(target_pointer_size == 0)
 	{
@@ -176,7 +176,17 @@ int DarttFlasher::set_pointer(uintptr_t pointer)
 		int shift = (i*8);
 		bootloader_control.working_buffer[i] = (pointer & (0xFF << shift)) >> shift;
 	}
-	return dartt_write_multi(&working_buffer, &ds);
+	int rc = dartt_read_multi(&working_buffer, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS)
+	{
+		return rc;
+	}
+	rc = dartt_sync(&working_buffer, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS)
+	{
+		return rc;
+	}
+	return write_action_flag(SET_WORKING_ADDR);	
 }
 
 /*
@@ -208,7 +218,21 @@ int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
 	{
 		printf("Error: issue loading working pointer at location 0x%lX\n", app_start);
 	}
-
 	printf("App start and working pointer match at 0x%lX\n", app_start);
+
+	working_addr = working_addr + 8;
+	rc = set_working_pointer(working_addr);
+	if(rc != DARTT_PROTOCOL_SUCCESS)
+	{
+		printf("Sync error %d\n", rc);
+		return rc;
+	}
+	uintptr_t check = get_pointer(GET_WORKING_ADDR);
+	if(check != working_addr)
+	{
+		printf("False positive sync success. working pointer load failed\n");
+		return ERROR_PTR_RETRIEVAL_FAILED;
+	}
+	printf("everything worked - working pointer now at 0x%lX\n", working_addr);
 	return 0;
 }
