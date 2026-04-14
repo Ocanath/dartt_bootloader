@@ -24,7 +24,8 @@ class DarttFlasher
 		enum {
 			FLASHER_SUCCESS = 0,
 			ERROR_TIMEOUT = -100,
-			ERROR_VERSION_RETRIEVAL_FAILED = -101
+			ERROR_VERSION_RETRIEVAL_FAILED = -101,
+			ERROR_PTR_RETRIEVAL_FAILED = -102
 		};
 
 	private:
@@ -41,6 +42,7 @@ class DarttFlasher
 
 		int poll_action_flags(uint32_t timeout_ms);
 		int write_action_flag(uint32_t flag);	//helper to load control with proper flags before dispatch. called before poll
+		uintptr_t get_start_pointer(void);
 
 };
 

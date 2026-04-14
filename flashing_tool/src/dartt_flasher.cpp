@@ -112,25 +112,45 @@ int DarttFlasher::get_version(std::string & version)
 	return 0;
 }
 
-/*
-	Helper for writing raw binary data to the target
-*/
-int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
+uintptr_t DarttFlasher::get_start_pointer(void)
 {
+	bootloader_periph.working_size = 0;
 	int rc = write_action_flag(GET_APPLICATION_START_ADDR);
 	if(rc != FLASHER_SUCCESS)
 	{
-		return rc;
+		return 0;
 	}
 
 	rc = poll_action_flags(timeout);
 	if(rc != FLASHER_SUCCESS)
 	{
-		return rc;
+		return 0;
 	}
-	unsigned char * p_app_start = NULL;
-	dartt_bl_load_wbuf_to_ptr(&bootloader_periph, &p_app_start);
-	uintptr_t app_start = (uintptr_t)p_app_start;
-	printf("%lu\n", app_start);
-	return 0;
+
+	rc = dartt_read_multi(&working_buffer, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS)
+	{
+		return 0;
+	}
+
+	uintptr_t app_start = 0;
+	for(size_t i = 0; i < bootloader_periph.working_size; i++)
+	{
+		app_start |= (uintptr_t)(bootloader_periph.working_buffer[i]) << (i*8);
+	}
+	
+	return app_start;
+}
+
+/*
+	Helper for writing raw binary data to the target
+*/
+int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
+{
+	uintptr_t app_start = get_start_pointer();
+	if(app_start == 0)
+	{
+		return ERROR_PTR_RETRIEVAL_FAILED;
+	}
+	printf("0x%lX\n", app_start);
 }
