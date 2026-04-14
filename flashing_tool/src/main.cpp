@@ -28,6 +28,7 @@ int main(int argc, char** argv)
 		{
 			printf("Bootloader Device Version: ");
 			printf("%s\n",version.c_str());
+			return rc;
 		}
 		else
 		{
