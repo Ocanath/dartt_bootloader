@@ -1,5 +1,10 @@
 #ifndef DARTT_BL_H
 #define DARTT_BL_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "dartt_bl_persistent.h"
 
 enum {
@@ -114,5 +119,9 @@ uintptr_t dartt_bl_get_page_addr(dartt_bl_t * pbl);
  * @return Byte address of @c pbl->erase_page, or @c NULL if @c pbl is NULL.
  */
 uintptr_t dartt_bl_get_flash_end(dartt_bl_t * pbl);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

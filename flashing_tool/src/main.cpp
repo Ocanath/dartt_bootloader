@@ -35,6 +35,7 @@ int main(int argc, char** argv)
 			return rc;
 		}
 	}
+	flasher.write_bin(NULL, 0);
 
 	return 0;
 }

@@ -16,6 +16,7 @@ class DarttFlasher
 
 		int get_version(std::string & version);
 
+		int write_bin(const unsigned char * bin, size_t len);
 
 		uint32_t timeout;
 
@@ -40,6 +41,7 @@ class DarttFlasher
 
 		int poll_action_flags(uint32_t timeout_ms);
 		int write_action_flag(uint32_t flag);	//helper to load control with proper flags before dispatch. called before poll
+
 };
 
 #endif

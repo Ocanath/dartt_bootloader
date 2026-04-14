@@ -1,5 +1,10 @@
 #ifndef DARTT_BL_PERSISTENT_H
 #define DARTT_BL_PERSISTENT_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 /*
@@ -18,5 +23,8 @@ typedef struct dartt_bl_persistent_t
 	uint32_t boot_mode;         /**< If set to the magic word, bootloader jumps to application without waiting for @c START_APPLICATION. */
 } dartt_bl_persistent_t;
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

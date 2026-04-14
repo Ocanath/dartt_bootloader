@@ -16,6 +16,8 @@ add_executable(dartt_flash
 	flashing_tool/src/dartt_flasher.cpp
 	flashing_tool/src/callbacks.cpp
 	flashing_tool/src/milliseconds.cpp
+	flashing_tool/src/stubs.c
+	shared/dartt_bl.c
 )
 
 target_include_directories(dartt_flash PRIVATE

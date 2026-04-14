@@ -1,6 +1,10 @@
 #ifndef DARTT_BL_LINKER_H
 #define DARTT_BL_LINKER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 /**
@@ -28,5 +32,9 @@ const unsigned char * dartt_bl_get_flash_base(void);
 const unsigned char * dartt_bl_get_app_start(void);
 
 /** @} */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -2,6 +2,7 @@
 #include "callbacks.h"
 #include <string.h>
 #include "milliseconds.h"
+#include "dartt_bl.h"
 
 DarttFlasher::DarttFlasher(unsigned char addr)
 {
@@ -108,5 +109,28 @@ int DarttFlasher::get_version(std::string & version)
 		(const char*)(bootloader_periph.working_buffer),
 		bootloader_periph.working_size
 	);
+	return 0;
+}
+
+/*
+	Helper for writing raw binary data to the target
+*/
+int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
+{
+	int rc = write_action_flag(GET_APPLICATION_START_ADDR);
+	if(rc != FLASHER_SUCCESS)
+	{
+		return rc;
+	}
+
+	rc = poll_action_flags(timeout);
+	if(rc != FLASHER_SUCCESS)
+	{
+		return rc;
+	}
+	unsigned char * p_app_start = NULL;
+	dartt_bl_load_wbuf_to_ptr(&bootloader_periph, &p_app_start);
+	uintptr_t app_start = (uintptr_t)p_app_start;
+	printf("%lu\n", app_start);
 	return 0;
 }

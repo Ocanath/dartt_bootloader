@@ -1,5 +1,10 @@
 #ifndef DARTT_BL_STUBS_H
 #define DARTT_BL_STUBS_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "stddef.h"
 #include "dartt_bl.h"
 
@@ -55,5 +60,9 @@ uint32_t dartt_bl_flash_write(unsigned char * dest, unsigned char * src, size_t 
 uint32_t dartt_bl_flash_erase(uint32_t erase_page, uint32_t erase_num_pages);
 
 /** @} */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
