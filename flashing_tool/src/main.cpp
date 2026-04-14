@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 
 	DarttFlasher flasher(args.dartt_address);
 	flasher.ser.autoconnect(921600);
-
+	flasher.init();
 
 	if(args.get_version)
 	{

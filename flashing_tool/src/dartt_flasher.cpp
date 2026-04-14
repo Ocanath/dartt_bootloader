@@ -8,6 +8,7 @@ DarttFlasher::DarttFlasher(unsigned char addr)
 {
 	tx_buf_mem = new unsigned char[_DARTT_SERIAL_BUFFER_SIZE];
 	rx_buf_mem = new unsigned char[_DARTT_SERIAL_BUFFER_SIZE];
+	ds = (dartt_sync_t){};
 	ds.address = addr;
 	ds.base_offset = 0;
 	ds.msg_type = TYPE_SERIAL_MESSAGE;
@@ -40,6 +41,8 @@ DarttFlasher::DarttFlasher(unsigned char addr)
 
 	timeout = 2000;
 	target_pointer_size = 0;
+	initialized = false;
+	attr_cpy = (dartt_bl_attributes_t){};
 }
 
 DarttFlasher::~DarttFlasher()
@@ -48,6 +51,33 @@ DarttFlasher::~DarttFlasher()
 	delete[] rx_buf_mem;
 	ser.disconnect();
 }
+
+
+
+int DarttFlasher::init(void)
+{
+	if(initialized)
+	{
+		return ERROR_ALREADY_INITIALIZED;
+	}
+	int rc = 0;
+	rc = dartt_read_multi(&ds.ctl_base, &ds);
+	if(rc != FLASHER_SUCCESS)
+	{
+		return rc;
+	}
+	attr_cpy = bootloader_periph.attr;
+	rc = get_target_pointer_size();
+	if(rc != FLASHER_SUCCESS)
+	{
+		return rc;
+	}
+
+	initialized = true;	
+	return FLASHER_SUCCESS;	
+}
+
+
 
 int DarttFlasher::poll_action_flags(uint32_t timeout_ms)
 {
@@ -162,6 +192,14 @@ int DarttFlasher::get_target_pointer_size(void)
 		return ERROR_POINTERSIZE_NOT_LOADED;
 	}
 	target_pointer_size = (size_t)(bootloader_periph.working_size);
+	if(target_pointer_size == 0)
+	{
+		return ERROR_POINTERSIZE_NOT_LOADED;
+	}
+	if(target_pointer_size > sizeof(bootloader_control.working_buffer))
+	{
+		return ERROR_MEMORY_OVERRUN;
+	}
 	return FLASHER_SUCCESS;
 }
 
@@ -198,14 +236,9 @@ int DarttFlasher::write_working_buffer(void)
 
 int DarttFlasher::set_working_pointer(uintptr_t pointer)
 {
-	if(target_pointer_size == 0)
+	if(initialized == false)
 	{
-		return ERROR_POINTERSIZE_NOT_LOADED;
-	}
-	if(target_pointer_size > sizeof(bootloader_control.working_buffer))
-	{
-		printf("Error: pointer size too large! Size is %d\n", target_pointer_size);
-		return ERROR_MEMORY_OVERRUN;
+		return ERROR_NOT_INITIALIZED;
 	}
 	if(target_pointer_size > sizeof(uintptr_t))
 	{
@@ -230,16 +263,11 @@ int DarttFlasher::set_working_pointer(uintptr_t pointer)
 */
 int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
 {
-	int rc;
-	if(target_pointer_size == 0)
+	if(initialized == false)
 	{
-		rc = get_target_pointer_size();
-		if(rc != FLASHER_SUCCESS)
-		{
-			return rc;
-		}
+		return ERROR_NOT_INITIALIZED;
 	}
-
+	int rc;
 	uintptr_t app_start = get_pointer(GET_APPLICATION_START_ADDR);
 	if(app_start == 0)
 	{
@@ -256,6 +284,14 @@ int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
 	}
 	printf("App start and working pointer match at 0x%lX\n", app_start);
 
+
+
+	
+
+
+
+
+
 	working_addr = working_addr + 8;
 	rc = set_working_pointer(working_addr);
 	if(rc != DARTT_PROTOCOL_SUCCESS)
@@ -267,6 +303,7 @@ int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
 	if(check != working_addr)
 	{
 		printf("False positive sync success. working pointer load failed\n");
+
 		return ERROR_PTR_RETRIEVAL_FAILED;
 	}
 	printf("everything worked - working pointer now at 0x%lX\n", working_addr);

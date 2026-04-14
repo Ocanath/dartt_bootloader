@@ -18,6 +18,8 @@ class DarttFlasher
 
 		int write_bin(const unsigned char * bin, size_t len);
 
+		int init(void);
+
 		uint32_t timeout;
 
 
@@ -29,14 +31,19 @@ class DarttFlasher
 			ERROR_INVALID_ARGUMENT = -103,
 			ERROR_POINTERSIZE_NOT_LOADED = -104,
 			ERROR_MEMORY_OVERRUN = -105,
-			ERROR_POINTERSIZE_TOO_LARGE = -106
+			ERROR_POINTERSIZE_TOO_LARGE = -106,
+			ERROR_ALREADY_INITIALIZED = -107,
+			ERROR_NOT_INITIALIZED = -108
 		};
 
 	private:
+		bool initialized;
+
 		unsigned char * tx_buf_mem;
 		unsigned char * rx_buf_mem;
 		
 		size_t target_pointer_size;	//attribute of target
+		dartt_bl_attributes_t attr_cpy;	//copy of base attributes
 
 		dartt_bl_t bootloader_control;
 		dartt_bl_t bootloader_periph;
