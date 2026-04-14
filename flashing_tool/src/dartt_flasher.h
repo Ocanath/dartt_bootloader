@@ -16,7 +16,7 @@ class DarttFlasher
 
 		int get_version(std::string & version);
 
-		int write_bin(const unsigned char * bin, size_t len);
+		int write_bin(const std::string & path);
 
 		int init(void);
 

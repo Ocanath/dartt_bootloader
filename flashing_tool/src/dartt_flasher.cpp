@@ -1,6 +1,7 @@
 #include "dartt_flasher.h"
 #include "callbacks.h"
 #include <string.h>
+#include <fstream>
 #include "milliseconds.h"
 #include "dartt_bl.h"
 
@@ -309,12 +310,19 @@ int DarttFlasher::erase_blob(uintptr_t start, size_t len)
 /*
 	Helper for writing raw binary data to the target
 */
-int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
+int DarttFlasher::write_bin(const std::string & path)
 {
 	if(initialized == false)
 	{
 		return ERROR_NOT_INITIALIZED;
 	}
+	std::ifstream file(path, std::ios::binary | std::ios::ate);
+	if(!file.is_open())
+	{
+		return ERROR_INVALID_ARGUMENT;
+	}
+	size_t len = (size_t)file.tellg();
+	file.seekg(0);
 	int rc;
 
 	printf("Flash start at location 0x%lX\n", flash_start);
@@ -334,8 +342,7 @@ int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
 
 	for(size_t i = 0; i < num_max_writes; i++)
 	{
-		size_t bin_offset = i*max_write_size;
-		memcpy(bootloader_control.working_buffer, &bin[bin_offset], max_write_size);
+		file.read(reinterpret_cast<char*>(bootloader_control.working_buffer), max_write_size);
 		bootloader_control.working_size = max_write_size;
 		rc = write_working_buffer();
 		if(rc != FLASHER_SUCCESS)
@@ -353,7 +360,7 @@ int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
 	{
 		size_t padded_size = ((nbytes_remainder + attr_cpy.write_size - 1)/attr_cpy.write_size)*attr_cpy.write_size;
 		memset(bootloader_control.working_buffer, 0xFF, padded_size);
-		memcpy(bootloader_control.working_buffer, &bin[num_max_writes*max_write_size], nbytes_remainder);
+		file.read(reinterpret_cast<char*>(bootloader_control.working_buffer), nbytes_remainder);
 		bootloader_control.working_size = padded_size;
 		rc = write_working_buffer();
 		if(rc != FLASHER_SUCCESS){return rc;}

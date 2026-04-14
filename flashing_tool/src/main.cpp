@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 			return rc;
 		}
 	}
-	int rc = flasher.write_bin(NULL, 0);
+	int rc = flasher.write_bin("");
 	if(rc != 0)
 	{
 		printf("Error %d\n", rc);
