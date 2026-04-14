@@ -43,7 +43,7 @@ DarttFlasher::DarttFlasher(unsigned char addr)
 	erase_region.buf = (unsigned char *)(&bootloader_control.erase_page);
 	erase_region.size = 2*sizeof(uint32_t);
 
-	timeout = 2000;
+	timeout = 5000;
 	target_pointer_size = 0;
 	initialized = false;
 	attr_cpy = (dartt_bl_attributes_t){};
