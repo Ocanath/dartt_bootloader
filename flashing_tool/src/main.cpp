@@ -35,7 +35,27 @@ int main(int argc, char** argv)
 			return rc;
 		}
 	}
-	int rc = flasher.write_bin("");
+	else if(args.eraseall)
+	{
+		int rc = flasher.mass_erase();
+		if(rc == 0)
+		{
+			printf("Mass erase success\n");
+		}
+		else
+		{
+			printf("Error: code %d\n", rc);
+		}
+		return rc;	//don't continue to do anything else if masserase is called
+	}
+
+	//todo: extract file extension and split based on .bin/.elf. If invalid throw error and exit. Exit if empty
+	if(args.filename == NULL)
+	{
+		printf("Error: no file specified\n");
+		return 1;
+	}
+	int rc = flasher.write_bin(args.filename);
 	if(rc != 0)
 	{
 		printf("Error %d\n", rc);

@@ -307,6 +307,22 @@ int DarttFlasher::erase_blob(uintptr_t start, size_t len)
 	return write_action_flag(ERASE_PAGES);
 }
 
+int DarttFlasher::mass_erase(void)
+{
+	if(initialized == false)
+	{
+		return ERROR_NOT_INITIALIZED;
+	}
+	int rc = 0;
+	rc = get_page_idx_of_pointer(app_start, bootloader_control.erase_page);
+	if(bootloader_control.erase_page > attr_cpy.num_pages)
+	{
+		return ERROR_ATTR_INVALID;
+	}
+	bootloader_control.erase_num_pages = (attr_cpy.num_pages - bootloader_control.erase_page);
+	return write_action_flag(ERASE_PAGES);
+}
+
 /*
 	Helper for writing raw binary data to the target
 */
@@ -321,6 +337,7 @@ int DarttFlasher::write_bin(const std::string & path)
 	{
 		return ERROR_INVALID_ARGUMENT;
 	}
+	printf("Writing file %s\n", path.c_str());
 	size_t len = (size_t)file.tellg();
 	file.seekg(0);
 	int rc;

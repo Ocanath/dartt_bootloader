@@ -13,13 +13,15 @@ class DarttFlasher
 		DarttFlasher(unsigned char addr);
 		~DarttFlasher();
 		Serial ser;
+		
+		int init(void);
 
 		int get_version(std::string & version);
 
 		int write_bin(const std::string & path);
 
-		int init(void);
-
+		int mass_erase(void);
+		
 		uint32_t timeout;
 
 
@@ -34,7 +36,8 @@ class DarttFlasher
 			ERROR_POINTERSIZE_TOO_LARGE = -106,
 			ERROR_ALREADY_INITIALIZED = -107,
 			ERROR_NOT_INITIALIZED = -108,
-			ERROR_NOTHING_TO_ERASE = -109
+			ERROR_NOTHING_TO_ERASE = -109,
+			ERROR_ATTR_INVALID = -110
 		};
 
 	private:
