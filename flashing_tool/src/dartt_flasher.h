@@ -44,6 +44,8 @@ class DarttFlasher
 		
 		size_t target_pointer_size;	//attribute of target
 		dartt_bl_attributes_t attr_cpy;	//copy of base attributes
+		uintptr_t app_start;
+		uintptr_t flash_start;
 
 		dartt_bl_t bootloader_control;
 		dartt_bl_t bootloader_periph;

@@ -43,6 +43,8 @@ DarttFlasher::DarttFlasher(unsigned char addr)
 	target_pointer_size = 0;
 	initialized = false;
 	attr_cpy = (dartt_bl_attributes_t){};
+	app_start = 0;
+	flash_start = 0;
 }
 
 DarttFlasher::~DarttFlasher()
@@ -71,6 +73,17 @@ int DarttFlasher::init(void)
 	if(rc != FLASHER_SUCCESS)
 	{
 		return rc;
+	}
+
+	app_start = get_pointer(GET_APPLICATION_START_ADDR);
+	if(app_start == 0)
+	{
+		return ERROR_PTR_RETRIEVAL_FAILED;
+	}
+	flash_start = get_pointer(GET_FLASH_BASE_ADDR);
+	if(flash_start == 0)
+	{
+		return ERROR_PTR_RETRIEVAL_FAILED;
 	}
 
 	initialized = true;	
@@ -269,20 +282,9 @@ int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
 		return ERROR_NOT_INITIALIZED;
 	}
 	int rc;
-
-	uintptr_t app_start = get_pointer(GET_APPLICATION_START_ADDR);
-	if(app_start == 0)
-	{
-		return ERROR_PTR_RETRIEVAL_FAILED;
-	}
-	uintptr_t flash_start = get_pointer(GET_FLASH_BASE_ADDR);
-	if(flash_start == 0)
-	{
-		return ERROR_PTR_RETRIEVAL_FAILED;
-	}
 	printf("Flash start at location 0x%lX\n", flash_start);
 
-	rc = write_action_flag(SET_WORKING_ADDR);
+	rc = set_working_pointer(app_start);
 	if(rc != FLASHER_SUCCESS){return rc;}
 
 	uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);
