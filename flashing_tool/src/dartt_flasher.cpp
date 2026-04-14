@@ -40,6 +40,9 @@ DarttFlasher::DarttFlasher(unsigned char addr)
 	working_buffer.buf = (unsigned char *)(&bootloader_control.working_size);
 	working_buffer.size = sizeof(bootloader_control.working_size)+sizeof(bootloader_control.working_buffer);
 
+	erase_region.buf = (unsigned char *)(&bootloader_control.erase_page);
+	erase_region.size = 2*sizeof(uint32_t);
+
 	timeout = 2000;
 	target_pointer_size = 0;
 	initialized = false;
@@ -303,6 +306,18 @@ int DarttFlasher::erase_blob(uintptr_t start, size_t len)
 	{
 		return ERROR_NOTHING_TO_ERASE;
 	}
+
+	/*Write out the control parameters before dispatch*/
+	rc = dartt_write_multi(&erase_region, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS){return rc;}
+	rc = dartt_read_multi(&erase_region, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS){return rc;}
+	if(bootloader_control.erase_num_pages != bootloader_periph.erase_num_pages 
+		|| bootloader_control.erase_page != bootloader_periph.erase_page)
+	{
+		return ERROR_LOAD_FAILED;
+	}
+
 	//dispatch erase
 	return write_action_flag(ERASE_PAGES);
 }
@@ -320,6 +335,17 @@ int DarttFlasher::mass_erase(void)
 		return ERROR_ATTR_INVALID;
 	}
 	bootloader_control.erase_num_pages = (attr_cpy.num_pages - bootloader_control.erase_page);
+
+	//for small buffers, write then read for confirmation is likely better than read + sync, since the number of deltas is most likely the worst case
+	rc = dartt_write_multi(&erase_region, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS){return rc;}
+	rc = dartt_read_multi(&erase_region, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS){return rc;}
+	if(bootloader_control.erase_num_pages != bootloader_periph.erase_num_pages 
+		|| bootloader_control.erase_page != bootloader_periph.erase_page)
+	{
+		return ERROR_LOAD_FAILED;
+	}
 	return write_action_flag(ERASE_PAGES);
 }
 

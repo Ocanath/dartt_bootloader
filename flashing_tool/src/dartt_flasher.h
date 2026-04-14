@@ -37,7 +37,8 @@ class DarttFlasher
 			ERROR_ALREADY_INITIALIZED = -107,
 			ERROR_NOT_INITIALIZED = -108,
 			ERROR_NOTHING_TO_ERASE = -109,
-			ERROR_ATTR_INVALID = -110
+			ERROR_ATTR_INVALID = -110,
+			ERROR_LOAD_FAILED = -111
 		};
 
 	private:
@@ -58,7 +59,8 @@ class DarttFlasher
 
 		dartt_mem_t action_flags;
 		dartt_mem_t working_buffer;
-		
+		dartt_mem_t erase_region;
+
 		int get_target_pointer_size(void);
 
 		int poll_action_flags(uint32_t timeout_ms);
