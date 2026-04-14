@@ -272,6 +272,24 @@ int DarttFlasher::set_working_pointer(uintptr_t pointer)
 	return write_action_flag(SET_WORKING_ADDR);	
 }
 
+int DarttFlasher::get_page_idx_of_pointer(uintptr_t pointer, uint32_t & page_idx)
+{
+	if(pointer < flash_start)
+	{
+		return ERROR_INVALID_ARGUMENT;
+	}
+	uintptr_t offset = pointer - flash_start;
+	uintptr_t page_size = ((uintptr_t)attr_cpy.page_size);
+	page_idx = (uint32_t)(offset/page_size);
+	uintptr_t rem = offset % page_size;
+	if(rem != 0)
+	{
+		page_idx++;	//any remainder means we have to erase that final page
+	}
+
+	return FLASHER_SUCCESS;
+}
+
 /*
 	Helper for writing raw binary data to the target
 */
@@ -294,9 +312,15 @@ int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
 	}
 	printf("App start and working pointer match at 0x%lX\n", app_start);
 
-
 	
-	
+	rc = get_page_idx_of_pointer(app_start, bootloader_control.erase_page);
+	if(rc != FLASHER_SUCCESS){return rc;}
+	uint32_t last_page_idx = 0;
+	rc = get_page_idx_of_pointer(app_start + len, last_page_idx);
+	if(rc != FLASHER_SUCCESS){return rc;}
+	bootloader_control.erase_num_pages = last_page_idx - bootloader_control.erase_page;
+	printf("Start page: %d\n", bootloader_control.erase_page);
+	printf("Num pages: %d\n", bootloader_control.erase_num_pages);	
 
 	size_t max_write_size = (sizeof(bootloader_control.working_buffer)/attr_cpy.write_size)*attr_cpy.write_size;	//floor division and reinflation yields max write size. Since working buffer is 64, this probably always yields 64
 	size_t num_max_writes = len/max_write_size;

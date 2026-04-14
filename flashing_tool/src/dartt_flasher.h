@@ -62,6 +62,7 @@ class DarttFlasher
 		uintptr_t get_pointer(uint32_t flag);
 		int set_working_pointer(uintptr_t pointer);
 		int write_working_buffer(void);
+		int get_page_idx_of_pointer(uintptr_t pointer, uint32_t & page_idx);
 };
 
 #endif
