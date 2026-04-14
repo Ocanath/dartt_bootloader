@@ -112,10 +112,18 @@ int DarttFlasher::get_version(std::string & version)
 	return 0;
 }
 
-uintptr_t DarttFlasher::get_start_pointer(void)
+/*
+Helper to get pointer. Flag must be either get working addr or get app start addr.
+*/
+uintptr_t DarttFlasher::get_pointer(uint32_t flag)
 {
+	if(flag != GET_WORKING_ADDR && flag != GET_APPLICATION_START_ADDR)
+	{
+		return 0;
+	}
+
 	bootloader_periph.working_size = 0;
-	int rc = write_action_flag(GET_APPLICATION_START_ADDR);
+	int rc = write_action_flag(flag);
 	if(rc != FLASHER_SUCCESS)
 	{
 		return 0;
@@ -143,14 +151,64 @@ uintptr_t DarttFlasher::get_start_pointer(void)
 }
 
 /*
+Helper to get the working size. Loads a pointer and then stores the size.
+*/
+int DarttFlasher::get_target_pointer_size(void)
+{
+	uintptr_t tmp = get_pointer(GET_APPLICATION_START_ADDR);
+	if(tmp == 0)
+	{
+		return ERROR_POINTERSIZE_NOT_LOADED;
+	}
+	target_pointer_size = (size_t)bootloader_periph.working_size;
+	return FLASHER_SUCCESS;
+}
+
+int DarttFlasher::set_pointer(uintptr_t pointer)
+{
+	if(target_pointer_size == 0)
+	{
+		return ERROR_POINTERSIZE_NOT_LOADED;
+	}
+	bootloader_control.working_size = target_pointer_size;
+	for(size_t i = 0; i < target_pointer_size; i++)
+	{
+		int shift = (i*8);
+		bootloader_control.working_buffer[i] = (pointer & (0xFF << shift)) >> shift;
+	}
+	return dartt_write_multi(&working_buffer, &ds);
+}
+
+/*
 	Helper for writing raw binary data to the target
 */
 int DarttFlasher::write_bin(const unsigned char * bin, size_t len)
 {
-	uintptr_t app_start = get_start_pointer();
+	int rc;
+	if(target_pointer_size == 0)
+	{
+		rc = get_target_pointer_size();
+		if(rc != FLASHER_SUCCESS)
+		{
+			return rc;
+		}
+	}
+
+	uintptr_t app_start = get_pointer(GET_APPLICATION_START_ADDR);
 	if(app_start == 0)
 	{
 		return ERROR_PTR_RETRIEVAL_FAILED;
 	}
-	printf("0x%lX\n", app_start);
+
+	rc = write_action_flag(SET_WORKING_ADDR);
+	if(rc != FLASHER_SUCCESS){return rc;}
+
+	uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);
+	if(app_start != working_addr)
+	{
+		printf("Error: issue loading working pointer at location 0x%lX\n", app_start);
+	}
+
+	printf("App start and working pointer match at 0x%lX\n", app_start);
+	return 0;
 }

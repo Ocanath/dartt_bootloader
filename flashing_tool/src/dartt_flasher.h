@@ -25,12 +25,16 @@ class DarttFlasher
 			FLASHER_SUCCESS = 0,
 			ERROR_TIMEOUT = -100,
 			ERROR_VERSION_RETRIEVAL_FAILED = -101,
-			ERROR_PTR_RETRIEVAL_FAILED = -102
+			ERROR_PTR_RETRIEVAL_FAILED = -102,
+			ERROR_INVALID_ARGUMENT = -103,
+			ERROR_POINTERSIZE_NOT_LOADED = -104
 		};
 
 	private:
 		unsigned char * tx_buf_mem;
 		unsigned char * rx_buf_mem;
+		
+		size_t target_pointer_size;	//attribute of target
 
 		dartt_bl_t bootloader_control;
 		dartt_bl_t bootloader_periph;
@@ -39,10 +43,13 @@ class DarttFlasher
 
 		dartt_mem_t action_flags;
 		dartt_mem_t working_buffer;
+		
+		int get_target_pointer_size(void);
 
 		int poll_action_flags(uint32_t timeout_ms);
 		int write_action_flag(uint32_t flag);	//helper to load control with proper flags before dispatch. called before poll
-		uintptr_t get_start_pointer(void);
+		uintptr_t get_pointer(uint32_t flag);
+		int set_pointer(uintptr_t pointer);
 
 };
 
