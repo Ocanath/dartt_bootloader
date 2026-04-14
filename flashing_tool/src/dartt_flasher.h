@@ -19,6 +19,7 @@ class DarttFlasher
 		int get_version(std::string & version);
 
 		int write_bin(const std::string & path);
+		int verify_app(uint32_t crc32);
 
 		int mass_erase(void);
 		
@@ -38,7 +39,8 @@ class DarttFlasher
 			ERROR_NOT_INITIALIZED = -108,
 			ERROR_NOTHING_TO_ERASE = -109,
 			ERROR_ATTR_INVALID = -110,
-			ERROR_LOAD_FAILED = -111
+			ERROR_LOAD_FAILED = -111,
+			ERROR_VERIFY_FAILED = -112
 		};
 
 	private:

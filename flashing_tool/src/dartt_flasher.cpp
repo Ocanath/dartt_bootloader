@@ -347,6 +347,28 @@ int DarttFlasher::mass_erase(void)
 	return write_action_flag(ERASE_PAGES);
 }
 
+int DarttFlasher::verify_app(uint32_t crc32)
+{
+	if(initialized == false)
+	{
+		return ERROR_NOT_INITIALIZED;
+	}
+
+	dartt_mem_t dm_crc32 = 
+	{
+		.buf = (unsigned char *)(&bootloader_control.fds.application_crc32),
+		.size = sizeof(uint32_t)
+	};	
+	int rc = write_action_flag(GET_CRC32);
+	if(rc != FLASHER_SUCCESS){return rc;}
+	dartt_read_multi(&dm_crc32, &ds);
+	if(crc32 != bootloader_periph.fds.application_crc32)
+	{
+		return ERROR_VERIFY_FAILED;
+	}
+	return FLASHER_SUCCESS;	//match, return happy
+}
+
 /*
 	Helper for writing raw binary data to the target
 */
@@ -422,5 +444,21 @@ int DarttFlasher::write_bin(const std::string & path)
 		if(rc != FLASHER_SUCCESS){return rc;}
 	}
 
+	printf("Writing appsize...\n");
+	dartt_mem_t dm_appsize = 
+	{
+		.buf = (unsigned char *)(&bootloader_control.fds.application_size),
+		.size = sizeof(uint32_t)
+	};
+	bootloader_control.fds.application_size = len;
+	rc = dartt_write_multi(&dm_appsize, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS){return rc;}
+	rc = dartt_read_multi(&dm_appsize, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS){return rc;}
+	if(bootloader_periph.fds.application_size != bootloader_control.fds.application_size)
+	{
+		return ERROR_LOAD_FAILED;
+	}
+	printf("Flashing Done!\n");
 	return FLASHER_SUCCESS;
 }
