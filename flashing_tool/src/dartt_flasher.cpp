@@ -639,7 +639,6 @@ int DarttFlasher::write_bin(const std::string & path, bool verify, uintptr_t sta
 		}
 		else
 		{
-			// printf("TODO: Implement readback verification for positional flashing\n");
 			rc = readback_verification(path, start_ptr);
 			if(rc == FLASHER_SUCCESS)
 			{
