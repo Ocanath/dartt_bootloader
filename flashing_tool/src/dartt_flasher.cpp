@@ -361,7 +361,8 @@ int DarttFlasher::verify_app(uint32_t crc32)
 	};	
 	int rc = write_action_flag(GET_CRC32);
 	if(rc != FLASHER_SUCCESS){return rc;}
-	dartt_read_multi(&dm_crc32, &ds);
+	rc = dartt_read_multi(&dm_crc32, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS){return rc;}
 	if(crc32 != bootloader_periph.fds.application_crc32)
 	{
 		return ERROR_VERIFY_FAILED;

@@ -49,7 +49,18 @@ int main(int argc, char** argv)
 		}
 		return rc;	//don't continue to do anything else if masserase is called
 	}
-
+	if(args.verify_only)
+	{
+		int rc = flasher.verify_app(321713991);
+		if(rc == DarttFlasher::FLASHER_SUCCESS)
+		{
+			printf("Verify success!\n");
+		}
+		else
+		{
+			printf("Error: Verification. Code %d\n", rc);
+		}
+	}
 	//todo: extract file extension and split based on .bin/.elf. If invalid throw error and exit. Exit if empty
 	if(args.filename == NULL)
 	{
