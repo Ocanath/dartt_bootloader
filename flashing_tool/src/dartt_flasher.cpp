@@ -512,6 +512,11 @@ int DarttFlasher::write_bin(const std::string & path, bool verify)
 		{
 			printf("Verify Success!\n");
 		}
+		else
+		{
+			printf("Error: Verification Failed!\n");
+			return rc;
+		}
 	}
 	return FLASHER_SUCCESS;
 }
