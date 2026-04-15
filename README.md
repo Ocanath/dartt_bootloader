@@ -4,9 +4,9 @@ This project aims to create a generic bootloader based on DARTT. The DARTT inter
 
 ## Basic Hardware/Peripheral Requirements
 
-1. Access to nonvolatile storage (read and write) for reading and storing the primary device address, for interfaces such as FDCAN and serial which require it.
+1. Access to nonvolatile storage (read and write) for reading and storing the primary device address.
 
-1. Access to the interface over which DARTT will be routed
+1. Access to the interface over which DARTT will be routed, such as UART, SPI, FDCAN, etc. A Serial based flashing tool is provided in this repository.
 
 ## Code Architecture
 
