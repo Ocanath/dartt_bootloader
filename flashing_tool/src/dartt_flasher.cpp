@@ -370,6 +370,41 @@ int DarttFlasher::verify_app(uint32_t crc32)
 	return FLASHER_SUCCESS;	//match, return happy
 }
 
+int DarttFlasher::get_bin_crc(const std::string & path, uint32_t & crc)
+{
+	std::ifstream file(path, std::ios::binary | std::ios::ate);
+	if(!file.is_open())
+	{
+		return ERROR_INVALID_ARGUMENT;
+	}
+	size_t len = (size_t)file.tellg();
+	file.seekg(0);
+
+
+	size_t i;
+	int j;
+	uint32_t byte, mask;
+
+	i = 0;
+	crc = 0xFFFFFFFF;
+	while (i < len)
+	{
+		unsigned char raw = 0;
+		file.read((char*)(&raw), 1);
+
+		byte = (uint32_t)raw;// Get next byte.
+		crc = crc ^ byte;
+		for (j = 7; j >= 0; j--)
+		{// Do eight times.
+			mask = (crc & 1) ? 0xFFFFFFFFU : 0U;
+			crc = (crc >> 1) ^ (0xEDB88320 & mask);
+		}
+		i = i + 1;
+	}
+	crc = ~crc;
+	return FLASHER_SUCCESS;
+}
+
 /*
 	Helper for writing raw binary data to the target
 */

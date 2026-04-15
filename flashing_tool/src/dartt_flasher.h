@@ -19,6 +19,7 @@ class DarttFlasher
 		int get_version(std::string & version);
 
 		int write_bin(const std::string & path);
+		int get_bin_crc(const std::string & path, uint32_t & crc);
 		int verify_app(uint32_t crc32);
 
 		int mass_erase(void);

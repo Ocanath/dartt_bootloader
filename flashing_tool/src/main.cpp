@@ -49,9 +49,24 @@ int main(int argc, char** argv)
 		}
 		return rc;	//don't continue to do anything else if masserase is called
 	}
+	//todo: extract file extension and split based on .bin/.elf. If invalid throw error and exit. Exit if empty
+	if(args.filename == NULL)
+	{
+		printf("Error: no file specified\n");
+		return 1;
+	}
+
 	if(args.verify_only)
 	{
-		int rc = flasher.verify_app(321713991);
+		uint32_t crc32 = 0;
+		int rc = flasher.get_bin_crc(args.filename, crc32);
+		if(rc != DarttFlasher::FLASHER_SUCCESS)
+		{
+			printf("Error: unable to get crc from file\n");
+			return rc;
+		}
+		
+		rc = flasher.verify_app(crc32);
 		if(rc == DarttFlasher::FLASHER_SUCCESS)
 		{
 			printf("Verify success!\n");
@@ -60,13 +75,9 @@ int main(int argc, char** argv)
 		{
 			printf("Error: Verification. Code %d\n", rc);
 		}
+		return rc;
 	}
-	//todo: extract file extension and split based on .bin/.elf. If invalid throw error and exit. Exit if empty
-	if(args.filename == NULL)
-	{
-		printf("Error: no file specified\n");
-		return 1;
-	}
+
 	int rc = flasher.write_bin(args.filename);
 	if(rc != 0)
 	{
