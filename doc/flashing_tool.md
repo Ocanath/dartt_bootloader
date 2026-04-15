@@ -66,13 +66,16 @@ This performs only the verification step, skipping flashing, and indicates wheth
 
 ## Launching
 
-The program can be launched via the flashing tool via the `--launch` command. Example:
+The program can be launched via the flashing tool via the `--launch` or equivalent `--start` command. Example:
 
 ```bash
 dartt_flash 17 --launch
+dartt_flash 17 --start	#equivalent
 ```
 
 This simply triggers the `START_APPLICATION` command and exits the program.
+
+
 
 ## Reading
 

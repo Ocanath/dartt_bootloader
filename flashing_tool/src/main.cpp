@@ -50,6 +50,11 @@ int main(int argc, char** argv)
 		}
 		return rc;	//don't continue to do anything else if masserase is called
 	}
+	else if(args.launch)
+	{
+		printf("Sending start signal!\n");
+		return flasher.start_app();
+	}
 	//todo: extract file extension and split based on .bin/.elf. If invalid throw error and exit. Exit if empty
 	if(args.filename == NULL)
 	{

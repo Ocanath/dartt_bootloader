@@ -79,6 +79,10 @@ args_t parse_args(int argc, char **argv)
         {
             args.launch = true;
         }
+        else if (strcmp(argv[i], "--start") == 0)
+        {
+            args.launch = true;
+        }
         else if (strcmp(argv[i], "--eraseall") == 0)
         {
             args.eraseall = true;

@@ -532,3 +532,15 @@ int DarttFlasher::write_bin(const std::string & path, bool verify, uintptr_t sta
 	return FLASHER_SUCCESS;
 }
 
+int DarttFlasher::start_app(void)
+{
+	bootloader_control.action_flag = START_APPLICATION;
+	bootloader_periph.action_flag = bootloader_control.action_flag;	//load to peripheral copy so poll works without issues
+	bootloader_periph.action_status = 0;
+	int rc = dartt_write_multi(&action_flags, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS)
+	{
+		return rc;
+	}
+	return FLASHER_SUCCESS;
+}

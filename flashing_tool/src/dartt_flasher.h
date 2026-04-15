@@ -24,6 +24,8 @@ class DarttFlasher
 
 		int mass_erase(void);
 		
+		int start_app(void);
+
 		uint32_t timeout;
 
 
