@@ -53,6 +53,22 @@ int main(int argc, char** argv)
 		printf("Sending start signal!\n");
 		return flasher.start_app();
 	}
+	if(args.output_file != NULL)
+	{
+		uintptr_t rorigin = args.has_rorigin ? args.rorigin : 0;
+		size_t rlen = args.has_rlen ? args.rlen : 0;
+		int rc = flasher.read_to_file(args.output_file, rorigin, rlen);
+		if(rc == DarttFlasher::FLASHER_SUCCESS)
+		{
+				printf("Read complete\n");
+		}
+		else
+		{
+			printf("Error: %d\n", rc);
+		}
+		return rc;
+	}
+
 	//todo: extract file extension and split based on .bin/.elf. If invalid throw error and exit. Exit if empty
 	if(args.filename == NULL)
 	{

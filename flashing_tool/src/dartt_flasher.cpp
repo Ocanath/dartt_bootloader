@@ -518,6 +518,55 @@ int DarttFlasher::readback_verification(const std::string & path, uintptr_t star
 	return FLASHER_SUCCESS;
 }
 
+int DarttFlasher::read_to_file(const std::string & path, uintptr_t start_ptr, size_t len)
+{
+	if(initialized == false)
+	{
+		return ERROR_NOT_INITIALIZED;
+	}
+	std::ofstream file(path, std::ios::binary);
+	if(!file.is_open())
+	{
+		return ERROR_INVALID_ARGUMENT;
+	}
+	if(start_ptr == 0)
+	{
+		start_ptr = app_start;
+	}
+	if(len == 0)
+	{
+		uintptr_t flash_end = flash_start + (uintptr_t)attr_cpy.num_pages * (uintptr_t)attr_cpy.page_size;
+		len = (size_t)(flash_end - start_ptr);
+	}
+	int rc = set_working_pointer(start_ptr);
+	if(rc != FLASHER_SUCCESS){return rc;}
+	uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);
+	if(start_ptr != working_addr){return ERROR_PTR_RETRIEVAL_FAILED;}
+
+	size_t max_read_size = sizeof(bootloader_control.working_buffer);
+	size_t num_max_reads = len / max_read_size;
+	size_t nbytes_remainder = len % max_read_size;
+
+	for(size_t i = 0; i < num_max_reads; i++)
+	{
+		bootloader_control.working_size = max_read_size;
+		rc = read_working_buffer();
+		if(rc != FLASHER_SUCCESS){return rc;}
+		file.write((char*)bootloader_periph.working_buffer, max_read_size);
+		working_addr += max_read_size;
+		rc = set_working_pointer(working_addr);
+		if(rc != FLASHER_SUCCESS){return rc;}
+	}
+	if(nbytes_remainder != 0)
+	{
+		bootloader_control.working_size = nbytes_remainder;
+		rc = read_working_buffer();
+		if(rc != FLASHER_SUCCESS){return rc;}
+		file.write((char*)bootloader_periph.working_buffer, nbytes_remainder);
+	}
+	return FLASHER_SUCCESS;
+}
+
 /*
 	Helper for writing raw binary data to the target
 */

@@ -20,6 +20,7 @@ class DarttFlasher
 
 		int write_bin(const std::string & path, bool verify, uintptr_t start_ptr=0);
 		int readback_verification(const std::string & path, uintptr_t start_ptr=0);		//byte for byte read back verification
+		int read_to_file(const std::string & path, uintptr_t start_ptr=0, size_t len=0);
 		int get_bin_crc(const std::string & path, uint32_t & crc);
 		int verify_app(uint32_t crc32);
 
