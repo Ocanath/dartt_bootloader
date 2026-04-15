@@ -11,10 +11,6 @@
 int main(int argc, char** argv)
 {
 	args_t args = parse_args(argc, argv);
-	if(args.get_version)
-	{
-		printf("Flashing Tool Version: %s\n", firmware_version);
-	}
 
 	DarttFlasher flasher(args.dartt_address);
 	flasher.ser.autoconnect(921600);
@@ -23,6 +19,8 @@ int main(int argc, char** argv)
 
 	if(args.get_version)
 	{
+		printf("Flashing Tool Version: %s\n", firmware_version);
+
 		std::string version;
 		int rc = flasher.get_version(version);	
 		if(rc == 0)
@@ -64,24 +62,39 @@ int main(int argc, char** argv)
 
 	if(args.verify_only)
 	{
-		
-		int rc = flasher.get_bin_crc(args.filename, crc32);
-		if(rc != DarttFlasher::FLASHER_SUCCESS)
+		if(args.has_origin_addr == false)
 		{
-			printf("Error: unable to get crc from file\n");
+			int rc = flasher.get_bin_crc(args.filename, crc32);
+			if(rc != DarttFlasher::FLASHER_SUCCESS)
+			{
+				printf("Error: unable to get crc from file\n");
+				return rc;
+			}
+			
+			rc = flasher.verify_app(crc32);
+			if(rc == DarttFlasher::FLASHER_SUCCESS)
+			{
+				printf("CRC Verification success!\n");
+			}
+			else
+			{
+				printf("Error: CRC Verification. Code %d\n", rc);
+			}
 			return rc;
-		}
-		
-		rc = flasher.verify_app(crc32);
-		if(rc == DarttFlasher::FLASHER_SUCCESS)
-		{
-			printf("Verify success!\n");
-		}
+		}		
 		else
 		{
-			printf("Error: Verification. Code %d\n", rc);
+			int rc = flasher.readback_verification(args.filename, args.origin_addr);
+			if(rc == DarttFlasher::FLASHER_SUCCESS)
+			{
+				printf("Readback Verification Success!\n");
+			}
+			else
+			{
+				printf("Error: Readback Verification. Code %d\n", rc);
+			}
+			return rc;
 		}
-		return rc;
 	}
 	int rc = 0;
 	if(args.has_origin_addr == false)

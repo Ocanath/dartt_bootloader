@@ -405,6 +405,119 @@ int DarttFlasher::get_bin_crc(const std::string & path, uint32_t & crc)
 	return FLASHER_SUCCESS;
 }
 
+int DarttFlasher::read_working_buffer(void)
+{
+	if(initialized == false)
+	{
+		return ERROR_NOT_INITIALIZED;
+	}
+	/*
+	Target location of just the working size register
+	*/
+	dartt_mem_t dbl_workingsize = 
+	{
+		.buf = (unsigned char *)(&bootloader_control.working_size),
+		.size = sizeof(bootloader_control.working_size)
+	};
+
+	if(bootloader_control.working_size == 0)	//forbid size 0 - this is caught in the bootloader anyway, but we use 0 as a sentinel for readback verification
+	{
+		return ERROR_INVALID_ARGUMENT;	//placeholder? maybe a better return value for this?
+	}
+
+	memset(bootloader_periph.working_buffer, 0, sizeof(bootloader_periph.working_buffer));
+	bootloader_periph.working_size = 0;
+
+	int rc = dartt_write_multi(&dbl_workingsize, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS){return rc;}
+	rc = write_action_flag(READ_BUFFER);
+	rc = dartt_read_multi(&working_buffer, &ds);
+	if(bootloader_periph.working_size != bootloader_control.working_size)
+	{
+		return ERROR_READ_FAILED;
+	}
+	return FLASHER_SUCCESS;
+}
+
+int DarttFlasher::readback_verification(const std::string & path, uintptr_t start_ptr)
+{
+	if(initialized == false)
+	{
+		return ERROR_NOT_INITIALIZED;
+	}
+	std::ifstream file(path, std::ios::binary | std::ios::ate);
+	if(!file.is_open())
+	{
+		return ERROR_INVALID_ARGUMENT;
+	}
+	printf("Verifying file %s\n", path.c_str());
+	size_t len = (size_t)file.tellg();
+	file.seekg(0);
+	int rc;
+	if(start_ptr == 0)
+	{
+		start_ptr = app_start;
+	}
+	rc = set_working_pointer(start_ptr);
+	if(rc != FLASHER_SUCCESS){return rc;}
+	uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);	//redundant - set working pointer reads back changes. However it's kind of nice to confirm read works properly
+	if(start_ptr != working_addr)
+	{return ERROR_PTR_RETRIEVAL_FAILED;}
+
+
+	size_t max_read_size = sizeof(bootloader_control.working_buffer);
+	size_t num_max_reads = len/max_read_size;
+	size_t nbytes_remainder = len % max_read_size;	//number of bytes in the tail/final read
+	printf("Verifying...\n");
+	unsigned char cmp_buf[sizeof(bootloader_control.working_buffer)] = {};
+
+	for(size_t i = 0; i < num_max_reads; i++)
+	{
+		printf("Reading chunk %lu, %lu bytes\n", (unsigned long)i, (unsigned long)max_read_size);
+
+		/*Read a chunk from the file*/
+		memset(cmp_buf, 0, sizeof(cmp_buf));
+		file.read(reinterpret_cast<char*>(cmp_buf), max_read_size);
+
+		/*Read the corresponding chunk from the target*/
+		bootloader_control.working_size = max_read_size;
+		rc = read_working_buffer();
+		if(rc != FLASHER_SUCCESS){return rc;}
+		
+		rc = memcmp(cmp_buf, bootloader_periph.working_buffer, max_read_size);
+		if(rc != 0)
+		{
+			printf("Verify FAILED: First difference found between 0x%lX and 0x%lX\n", working_addr, working_addr + max_read_size);
+			return ERROR_VERIFY_FAILED;
+		}
+
+		working_addr += max_read_size;
+		rc = set_working_pointer(working_addr);
+		if(rc != FLASHER_SUCCESS){return rc;}	//this uses sync which is redundant
+	}
+	if(nbytes_remainder != 0)
+	{
+		printf("Reading final chunk %lu bytes\n", (unsigned long)nbytes_remainder);
+
+		/*Read a chunk from the file*/
+		memset(cmp_buf, 0, sizeof(cmp_buf));
+		file.read(reinterpret_cast<char*>(cmp_buf), nbytes_remainder);
+
+		/*Read the corresponding chunk from the target*/
+		bootloader_control.working_size = nbytes_remainder;
+		rc = read_working_buffer();
+		if(rc != FLASHER_SUCCESS){return rc;}
+		
+		rc = memcmp(cmp_buf, bootloader_periph.working_buffer, nbytes_remainder);
+		if(rc != 0)
+		{
+			printf("Verify FAILED: First difference found between 0x%lX and 0x%lX\n", working_addr, working_addr + nbytes_remainder);
+			return ERROR_VERIFY_FAILED;
+		}
+	}
+	return FLASHER_SUCCESS;
+}
+
 /*
 	Helper for writing raw binary data to the target
 */

@@ -19,6 +19,7 @@ class DarttFlasher
 		int get_version(std::string & version);
 
 		int write_bin(const std::string & path, bool verify, uintptr_t start_ptr=0);
+		int readback_verification(const std::string & path, uintptr_t start_ptr=0);		//byte for byte read back verification
 		int get_bin_crc(const std::string & path, uint32_t & crc);
 		int verify_app(uint32_t crc32);
 
@@ -43,7 +44,8 @@ class DarttFlasher
 			ERROR_NOTHING_TO_ERASE = -109,
 			ERROR_ATTR_INVALID = -110,
 			ERROR_LOAD_FAILED = -111,
-			ERROR_VERIFY_FAILED = -112
+			ERROR_VERIFY_FAILED = -112,
+			ERROR_READ_FAILED = -114
 		};
 
 	private:
@@ -73,6 +75,7 @@ class DarttFlasher
 		uintptr_t get_pointer(uint32_t flag);
 		int set_working_pointer(uintptr_t pointer);
 		int write_working_buffer(void);
+		int read_working_buffer(void);
 		int get_page_idx_of_pointer(uintptr_t pointer, uint32_t & page_idx);
 		int erase_blob(uintptr_t start, size_t size);
 };
