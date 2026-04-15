@@ -549,6 +549,8 @@ int DarttFlasher::read_to_file(const std::string & path, uintptr_t start_ptr, si
 
 	for(size_t i = 0; i < num_max_reads; i++)
 	{
+		printf("Reading chunk %lu, %lu bytes\n", (unsigned long)i, (unsigned long)max_read_size);
+
 		bootloader_control.working_size = max_read_size;
 		rc = read_working_buffer();
 		if(rc != FLASHER_SUCCESS){return rc;}
@@ -559,6 +561,7 @@ int DarttFlasher::read_to_file(const std::string & path, uintptr_t start_ptr, si
 	}
 	if(nbytes_remainder != 0)
 	{
+		printf("Reading final chunk, %lu bytes\n", (unsigned long)max_read_size);
 		bootloader_control.working_size = nbytes_remainder;
 		rc = read_working_buffer();
 		if(rc != FLASHER_SUCCESS){return rc;}
