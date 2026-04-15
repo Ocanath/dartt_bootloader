@@ -19,6 +19,7 @@ int main(int argc, char** argv)
 	DarttFlasher flasher(args.dartt_address);
 	flasher.ser.autoconnect(921600);
 	flasher.init();
+	uint32_t crc32 = 0;	//for verification
 
 	if(args.get_version)
 	{
@@ -58,7 +59,7 @@ int main(int argc, char** argv)
 
 	if(args.verify_only)
 	{
-		uint32_t crc32 = 0;
+		
 		int rc = flasher.get_bin_crc(args.filename, crc32);
 		if(rc != DarttFlasher::FLASHER_SUCCESS)
 		{
@@ -78,8 +79,12 @@ int main(int argc, char** argv)
 		return rc;
 	}
 
-	int rc = flasher.write_bin(args.filename);
-	if(rc != 0)
+	int rc = flasher.write_bin(args.filename, !args.no_verify);
+	if(rc == DarttFlasher::ERROR_VERIFY_FAILED)
+	{
+		printf("Error: Verification Failed!\n");
+	}
+	else if(rc != DarttFlasher::FLASHER_SUCCESS)
 	{
 		printf("Error %d\n", rc);
 	}

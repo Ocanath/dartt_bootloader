@@ -408,7 +408,7 @@ int DarttFlasher::get_bin_crc(const std::string & path, uint32_t & crc)
 /*
 	Helper for writing raw binary data to the target
 */
-int DarttFlasher::write_bin(const std::string & path)
+int DarttFlasher::write_bin(const std::string & path, bool verify)
 {
 	if(initialized == false)
 	{
@@ -501,5 +501,18 @@ int DarttFlasher::write_bin(const std::string & path)
 	if(rc != FLASHER_SUCCESS){return rc;}
 
 	printf("Flashing Done!\n");
+
+	if(verify)
+	{
+		uint32_t crc32 = 0;
+		rc = get_bin_crc(path, crc32);
+		if(rc != FLASHER_SUCCESS){return ERROR_VERIFY_FAILED;}
+		rc = verify_app(crc32);
+		if(rc == FLASHER_SUCCESS)
+		{
+			printf("Verify Success!\n");
+		}
+	}
 	return FLASHER_SUCCESS;
 }
+
