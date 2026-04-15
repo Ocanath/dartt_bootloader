@@ -13,7 +13,7 @@ int main(int argc, char** argv)
 	args_t args = parse_args(argc, argv);
 
 	DarttFlasher flasher(args.dartt_address);
-	flasher.ser.autoconnect(921600);
+	flasher.ser.autoconnect(args.baudrate);
 	flasher.init();
 	uint32_t crc32 = 0;	//for verification
 

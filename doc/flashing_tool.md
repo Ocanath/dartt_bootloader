@@ -34,7 +34,7 @@ The flashing procedure works as follows:
 1. Check page alignment of the first address and throw an error if the start address isn't page aligned. This is a critical error indicating a misconfigured target.
 1. Begin writing the blob. Erase the first page, fill the write buffer, and dispatch flash write operations until the page fills, then continue to the next page, for each page which must contain new memory. Pages which do not need to be modified remain untouched by the tool.
 1. Once writing is complete, dispatch the bootloader's crc32 calculation and compare it to an internally computed crc32. Indicate match/success or mismatch/failure.
-1. If success, write the application size and trigger a settings update, then exit if successful. The `--skip-save` flag can be used to force the tool to skip updating the bootloader persistent settings section. `--no-verify` and `--no-application` also implicitly set `--skip-save`. 
+1. If success, write the application size and trigger a settings update, then exit if successful. 
 
 Binary (.bin) files are always written starting at the retrieved application start address, unless a `--origin` argument is specified. `--origin` is invalid for .elf files and will cause the program to exit with an error.
 
