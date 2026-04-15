@@ -19,7 +19,7 @@ static void print_help(const char *prog)
         "  -o <file>            Read memory out to .bin or .elf\n"
         "\n"
         "Flashing options:\n"
-        "  --start <addr>       Override start address for .bin files (hex or decimal)\n"
+        "  --origin <addr>       Override start address for .bin files (hex or decimal)\n"
         "  --no-application     Skip application start address check, implies --skip-save\n"
         "  --no-verify          Skip post-flash verification, implies --skip-save\n"
         "  --skip-save          Skip updating bootloader persistent settings\n"
@@ -110,11 +110,11 @@ args_t parse_args(int argc, char **argv)
             if (i + 1 >= argc) die("'-o' requires a filename argument");
             args.output_file = argv[++i];
         }
-        else if (strcmp(argv[i], "--start") == 0)
+        else if (strcmp(argv[i], "--origin") == 0)
         {
-            if (i + 1 >= argc) die("'--start' requires an address argument");
-            args.start_addr = parse_uint32(argv[++i], "--start");
-            args.has_start_addr = true;
+            if (i + 1 >= argc) die("'--origin' requires an address argument");
+            args.origin_addr = parse_uint32(argv[++i], "--origin");
+            args.has_origin_addr = true;
         }
         else if (strcmp(argv[i], "--rstart") == 0)
         {
@@ -170,12 +170,12 @@ args_t parse_args(int argc, char **argv)
 
     if (positional < 1) die("address is required");
 
-    /* --start is invalid for .elf files */
-    if (args.has_start_addr && args.filename != NULL)
+    /* --origin is invalid for .elf files */
+    if (args.has_origin_addr && args.filename != NULL)
     {
         const char *ext = strrchr(args.filename, '.');
         if (ext != NULL && strcmp(ext, ".elf") == 0)
-            die("'--start' is invalid for .elf files");
+            die("'--origin' is invalid for .elf files");
     }
 
     return args;

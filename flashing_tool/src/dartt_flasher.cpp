@@ -408,7 +408,7 @@ int DarttFlasher::get_bin_crc(const std::string & path, uint32_t & crc)
 /*
 	Helper for writing raw binary data to the target
 */
-int DarttFlasher::write_bin(const std::string & path, bool verify)
+int DarttFlasher::write_bin(const std::string & path, bool verify, uintptr_t start_ptr)
 {
 	if(initialized == false)
 	{
@@ -426,15 +426,19 @@ int DarttFlasher::write_bin(const std::string & path, bool verify)
 	int rc;
 
 	printf("Flash start at location 0x%lX\n", flash_start);
-	rc = set_working_pointer(app_start);
+	if(start_ptr == 0)
+	{
+		start_ptr = app_start;
+	}
+	rc = set_working_pointer(start_ptr);
 	if(rc != FLASHER_SUCCESS){return rc;}
 	uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);	//redundant - set working pointer reads back changes. However it's kind of nice to confirm read works properly
-	if(app_start != working_addr)
+	if(start_ptr != working_addr)
 	{return ERROR_PTR_RETRIEVAL_FAILED;}
 
 	//pre-erase the whole target region for incremental write
 	printf("Pre-erasing application region, starting at 0x%lX...\n", (unsigned long)app_start);
-	rc = erase_blob(app_start, len);	
+	rc = erase_blob(start_ptr, len);	
 	if(rc != FLASHER_SUCCESS){return rc;}
 	printf("Success!\n");
 	
@@ -504,18 +508,25 @@ int DarttFlasher::write_bin(const std::string & path, bool verify)
 
 	if(verify)
 	{
-		uint32_t crc32 = 0;
-		rc = get_bin_crc(path, crc32);
-		if(rc != FLASHER_SUCCESS){return ERROR_VERIFY_FAILED;}
-		rc = verify_app(crc32);
-		if(rc == FLASHER_SUCCESS)
+		if(start_ptr == app_start)
 		{
-			printf("Verify Success!\n");
+			uint32_t crc32 = 0;
+			rc = get_bin_crc(path, crc32);
+			if(rc != FLASHER_SUCCESS){return ERROR_VERIFY_FAILED;}
+			rc = verify_app(crc32);
+			if(rc == FLASHER_SUCCESS)
+			{
+				printf("Verify Success!\n");
+			}
+			else
+			{
+				printf("Error: Verification Failed!\n");
+				return rc;
+			}
 		}
 		else
 		{
-			printf("Error: Verification Failed!\n");
-			return rc;
+			printf("TODO: Implement readback verification for positional flashing\n");
 		}
 	}
 	return FLASHER_SUCCESS;

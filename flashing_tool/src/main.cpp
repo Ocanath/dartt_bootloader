@@ -78,8 +78,15 @@ int main(int argc, char** argv)
 		}
 		return rc;
 	}
-
-	int rc = flasher.write_bin(args.filename, !args.no_verify);
+	int rc = 0;
+	if(args.has_origin_addr == false)
+	{
+		rc = flasher.write_bin(args.filename, !args.no_verify);
+	}
+	else
+	{
+		rc = flasher.write_bin(args.filename, !args.no_verify, args.origin_addr);
+	}
 	if(rc == DarttFlasher::ERROR_VERIFY_FAILED)
 	{
 		printf("Error: Verification Failed!\n");

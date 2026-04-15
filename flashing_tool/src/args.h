@@ -2,6 +2,7 @@
 #define ARGS_H
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 typedef struct {
     /* required */
@@ -26,13 +27,13 @@ typedef struct {
     bool            get_version;    /* --version */
 
     /* address overrides */
-    uint32_t        start_addr;     /* --start (bin only) */
-    bool            has_start_addr;
+    uintptr_t        origin_addr;     /* --origin (bin only) */
+    bool            has_origin_addr;
 
-    uint32_t        rstart;         /* --rstart: read start address */
+    uintptr_t        rstart;         /* --rstart: read start address */
     bool            has_rstart;
 
-    uint32_t        rlen;           /* --rlen: read length in bytes */
+    size_t        rlen;           /* --rlen: read length in bytes */
     bool            has_rlen;
 
     int             baudrate;       /* --baudrate, default 921600 */

@@ -36,12 +36,12 @@ The flashing procedure works as follows:
 1. Once writing is complete, dispatch the bootloader's crc32 calculation and compare it to an internally computed crc32. Indicate match/success or mismatch/failure.
 1. If success, write the application size and trigger a settings update, then exit if successful. The `--skip-save` flag can be used to force the tool to skip updating the bootloader persistent settings section. `--no-verify` and `--no-application` also implicitly set `--skip-save`. 
 
-Binary (.bin) files are always written starting at the retrieved application start address, unless a `--start` argument is specified. `--start` is invalid for .elf files and will cause the program to exit with an error.
+Binary (.bin) files are always written starting at the retrieved application start address, unless a `--origin` argument is specified. `--origin` is invalid for .elf files and will cause the program to exit with an error.
 
-Example usage of `--start`:
+Example usage of `--origin`:
 
 ```bash
-dartt_flash 22 settings.bin --start 0x0801F800
+dartt_flash 22 settings.bin --origin 0x0801F800
 ```
 
 The flashing tool will pre-check whether the binary fits using 
