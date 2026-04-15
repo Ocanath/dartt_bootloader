@@ -25,7 +25,7 @@ static void print_help(const char *prog)
         "  --no-verify          Skip post-flash verification, implies --skip-save\n"
         "\n"
         "Read options:\n"
-        "  --rstart <addr>      Read start address (absolute, hex or decimal)\n"
+        "  --rorigin <addr>      Read start address (absolute, hex or decimal)\n"
         "  --rlen <len>         Read length in bytes (hex or decimal)\n"
         "\n"
         "Comms options:\n"
@@ -120,11 +120,11 @@ args_t parse_args(int argc, char **argv)
             args.origin_addr = parse_uint32(argv[++i], "--origin");
             args.has_origin_addr = true;
         }
-        else if (strcmp(argv[i], "--rstart") == 0)
+        else if (strcmp(argv[i], "--rorigin") == 0)
         {
-            if (i + 1 >= argc) die("'--rstart' requires an address argument");
-            args.rstart = parse_uint32(argv[++i], "--rstart");
-            args.has_rstart = true;
+            if (i + 1 >= argc) die("'--rorigin' requires an address argument");
+            args.rorigin = parse_uint32(argv[++i], "--rorigin");
+            args.has_rorigin = true;
         }
         else if (strcmp(argv[i], "--rlen") == 0)
         {

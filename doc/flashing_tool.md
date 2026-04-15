@@ -81,13 +81,13 @@ This simply triggers the `START_APPLICATION` command and exits the program.
 
 The flashing tool can also be used to read out memory from the device. This is triggered with the `-o` command followed by a destination filename argument (must have type `.bin` or `.elf`). By default, the entire memory is read out. 
 
-Reading may also be performed at specific regions using `--rstart` and `--rlen`. Example:
+Reading may also be performed at specific regions using `--rorigin` and `--rlen`. Example:
 
 ```bash
-dartt_flash 10 --rstart 0x0801F800 --rlen 0x800 -o settings.bin
+dartt_flash 10 --rorigin 0x0801F800 --rlen 0x800 -o settings.bin
 ```
 
-Where `--rstart` is an absolute address and `--rlen` is in bytes. 
+Where `--rorigin` is an absolute address and `--rlen` is in bytes. 
 
 If written out to a `.elf`, the absolute address in memory is used. The entire available flash region is accessible, including the bootloader itself, if desired.
 

@@ -30,8 +30,8 @@ typedef struct {
     uintptr_t        origin_addr;     /* --origin (bin only) */
     bool            has_origin_addr;
 
-    uintptr_t        rstart;         /* --rstart: read start address */
-    bool            has_rstart;
+    uintptr_t        rorigin;         /* --rorigin: read start address */
+    bool            has_rorigin;
 
     size_t        rlen;           /* --rlen: read length in bytes */
     bool            has_rlen;
