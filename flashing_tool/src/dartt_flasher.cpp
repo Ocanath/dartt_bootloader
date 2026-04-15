@@ -629,7 +629,7 @@ int DarttFlasher::write_bin(const std::string & path, bool verify, uintptr_t sta
 			rc = verify_app(crc32);
 			if(rc == FLASHER_SUCCESS)
 			{
-				printf("Verify Success!\n");
+				printf("CRC Verify Success!\n");
 			}
 			else
 			{
@@ -640,7 +640,12 @@ int DarttFlasher::write_bin(const std::string & path, bool verify, uintptr_t sta
 		else
 		{
 			// printf("TODO: Implement readback verification for positional flashing\n");
-			return readback_verification(path, start_ptr);
+			rc = readback_verification(path, start_ptr);
+			if(rc == FLASHER_SUCCESS)
+			{
+				printf("Readback Verify Success!\n");
+			}
+			return rc;
 		}
 	}
 	return FLASHER_SUCCESS;
