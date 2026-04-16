@@ -50,5 +50,7 @@ It is **imperative** that we do not write the whole file into a RAM buffer. The 
 	Same rules apply to loops.
 
 
-- **IMPERATIVE:** Do not make unnecessary insertions/deletions in dartt_flasher.cpp and dartt_flasher.h. Only add minimum changes necessary to produce the requested functionality. This is currently only set up for hardware testing and I will be scrutinizing changes made to these files carefully. If the modifications are too verbose for me to review, I will not merge them.
+- **IMPERATIVE:** Do not make unnecessary insertions/deletions in dartt_flasher.cpp and dartt_flasher.h. Only add minimum changes necessary to produce the requested functionality. This is currently only set up for hardware testing and I will be scrutinizing changes made to these files carefully. If the modifications are too verbose for me to review, I will not merge them. 
+
+- You may make the BinaryFileHandler class as large as necessary, but be very conservative with any changes to dartt_flasher.cpp, and don't touch my formatting in dartt_flasher.cpp. I can violate my own formatting rules but you may not.
 
