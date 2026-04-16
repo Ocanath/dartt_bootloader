@@ -13,15 +13,15 @@ class DarttFlasher
 		DarttFlasher(unsigned char addr);
 		~DarttFlasher();
 		Serial ser;
-		
+
 		int init(void);
 
 		int get_version(std::string & version);
 
-		int write_bin(const std::string & path, bool verify, uintptr_t start_ptr=0);
+		int write_file(const std::string & path, bool verify, uintptr_t start_ptr=0);
 		int readback_verification(const std::string & path, uintptr_t start_ptr=0);		//byte for byte read back verification
 		int read_to_file(const std::string & path, uintptr_t start_ptr=0, size_t len=0);
-		int get_bin_crc(const std::string & path, uint32_t & crc);
+		int get_file_crc(const std::string & path, uint32_t & crc);
 		int verify_app(uint32_t crc32);
 
 		int mass_erase(void);
@@ -46,10 +46,14 @@ class DarttFlasher
 			ERROR_ATTR_INVALID = -110,
 			ERROR_LOAD_FAILED = -111,
 			ERROR_VERIFY_FAILED = -112,
-			ERROR_READ_FAILED = -114
+			ERROR_READ_FAILED = -114,
+			ERROR_UNSUPPORTED_FILE_TYPE = -115
 		};
 
 	private:
+		enum class FileType { BIN, ELF, UNKNOWN };
+		static FileType get_file_type(const std::string & path);
+
 		bool initialized;
 
 		unsigned char * tx_buf_mem;

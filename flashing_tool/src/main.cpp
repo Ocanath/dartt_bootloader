@@ -69,7 +69,6 @@ int main(int argc, char** argv)
 		return rc;
 	}
 
-	//todo: extract file extension and split based on .bin/.elf. If invalid throw error and exit. Exit if empty
 	if(args.filename == NULL)
 	{
 		printf("Error: no file specified\n");
@@ -80,7 +79,7 @@ int main(int argc, char** argv)
 	{
 		if(args.has_origin_addr == false)
 		{
-			int rc = flasher.get_bin_crc(args.filename, crc32);
+			int rc = flasher.get_file_crc(args.filename, crc32);
 			if(rc != DarttFlasher::FLASHER_SUCCESS)
 			{
 				printf("Error: unable to get crc from file\n");
@@ -115,11 +114,11 @@ int main(int argc, char** argv)
 	int rc = 0;
 	if(args.has_origin_addr == false)
 	{
-		rc = flasher.write_bin(args.filename, !args.no_verify);
+		rc = flasher.write_file(args.filename, !args.no_verify);
 	}
 	else
 	{
-		rc = flasher.write_bin(args.filename, !args.no_verify, args.origin_addr);
+		rc = flasher.write_file(args.filename, !args.no_verify, args.origin_addr);
 	}
 	if(rc == DarttFlasher::ERROR_VERIFY_FAILED)
 	{
