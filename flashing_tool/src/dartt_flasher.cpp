@@ -1,10 +1,10 @@
 #include "dartt_flasher.h"
 #include "callbacks.h"
+#include "binary_file_handler.h"
 #include <string.h>
 #include <fstream>
 #include "milliseconds.h"
 #include "dartt_bl.h"
-#include <elfio/elfio.hpp>
 
 DarttFlasher::DarttFlasher(unsigned char addr)
 {
@@ -59,24 +59,7 @@ DarttFlasher::~DarttFlasher()
 	ser.disconnect();
 }
 
-DarttFlasher::FileType DarttFlasher::get_file_type(const std::string & path)
-{
-	size_t dot = path.rfind('.');
-	if(dot == std::string::npos) 
-	{
-		return FileType::UNKNOWN;
-	}
-	std::string ext = path.substr(dot);
-	if(ext == ".bin") 
-	{
-		return FileType::BIN;
-	}
-	if(ext == ".elf") 
-	{
-		return FileType::ELF;
-	}
-	return FileType::UNKNOWN;
-}
+
 
 int DarttFlasher::init(void)
 {
@@ -388,67 +371,31 @@ int DarttFlasher::verify_app(uint32_t crc32)
 	return FLASHER_SUCCESS;	//match, return happy
 }
 
-int DarttFlasher::get_file_crc(const std::string & path, uint32_t & crc)
+int DarttFlasher::get_file_crc(BinaryFileHandler& handler, uint32_t& crc)
 {
-	FileType ft = get_file_type(path);
-	if(ft == FileType::UNKNOWN)
-	{
-		return ERROR_UNSUPPORTED_FILE_TYPE;
-	}
+	handler.reset();
+	size_t len = handler.get_file_size();
 
+	size_t i;
+	int j;
+	uint32_t byte, mask;
+
+	i = 0;
 	crc = 0xFFFFFFFF;
-
-	if(ft == FileType::BIN)
+	while (i < len)
 	{
-		std::ifstream file(path, std::ios::binary | std::ios::ate);
-		if(!file.is_open()) 
-		{
-			return ERROR_INVALID_ARGUMENT;
-		}
-		size_t len = (size_t)file.tellg();
-		file.seekg(0);
-		for(size_t i = 0; i < len; i++)
-		{
-			unsigned char raw = 0;
-			file.read((char*)(&raw), 1);
-			uint32_t byte = (uint32_t)raw;
-			crc = crc ^ byte;
-			for(int j = 7; j >= 0; j--)
-			{
-				uint32_t mask = (crc & 1) ? 0xFFFFFFFFU : 0U;
-				crc = (crc >> 1) ^ (0xEDB88320 & mask);
-			}
-		}
-	}
-	else	// ELF
-	{
-		ELFIO::elfio reader;
-		if(!reader.load(path)) 
-		{
-			return ERROR_INVALID_ARGUMENT;
-		}
-		for(int si = 0; si < (int)reader.segments.size(); si++)
-		{
-			ELFIO::segment* seg = reader.segments[si];
-			if(seg->get_type() != ELFIO::PT_LOAD || seg->get_file_size() == 0) 
-			{
-				continue;
-			}
-			const unsigned char* seg_data = (const unsigned char*)seg->get_data();
-			size_t seg_len = (size_t)seg->get_file_size();
-			for(size_t i = 0; i < seg_len; i++)
-			{
-				uint32_t byte = (uint32_t)seg_data[i];
-				crc = crc ^ byte;
-				for(int j = 7; j >= 0; j--)
-				{
-					uint32_t mask = (crc & 1) ? 0xFFFFFFFFU : 0U;
-					crc = (crc >> 1) ^ (0xEDB88320 & mask);
-				}
-			}
-		}
-	}
+		unsigned char raw = 0;
+		handler.read_chunk(&raw, 1);
 
+		byte = (uint32_t)raw;// Get next byte.
+		crc = crc ^ byte;
+		for (j = 7; j >= 0; j--)
+		{// Do eight times.
+			mask = (crc & 1) ? 0xFFFFFFFFU : 0U;
+			crc = (crc >> 1) ^ (0xEDB88320 & mask);
+		}
+		i = i + 1;
+	}
 	crc = ~crc;
 	return FLASHER_SUCCESS;
 }
@@ -487,154 +434,84 @@ int DarttFlasher::read_working_buffer(void)
 	return FLASHER_SUCCESS;
 }
 
-int DarttFlasher::readback_verification(const std::string & path, uintptr_t start_ptr)
+int DarttFlasher::readback_verification(BinaryFileHandler& handler, uintptr_t start_ptr)
 {
-	if(initialized == false) 
+	if(initialized == false)
 	{
 		return ERROR_NOT_INITIALIZED;
 	}
-
-	FileType ft = get_file_type(path);
-	if(ft == FileType::UNKNOWN) 
-	{
-		return ERROR_UNSUPPORTED_FILE_TYPE;
-	}
-
-	printf("Verifying file %s\n", path.c_str());
+	handler.reset();
+	size_t len = handler.get_file_size();
 	int rc;
-
-	if(ft == FileType::BIN)
+	if(start_ptr == 0)
 	{
-		std::ifstream file(path, std::ios::binary | std::ios::ate);
-		if(!file.is_open()) 
-		{
-			return ERROR_INVALID_ARGUMENT;
-		}
-		size_t len = (size_t)file.tellg();
-		file.seekg(0);
-		if(start_ptr == 0) 
-		{
-			start_ptr = app_start;
-		}
-		rc = set_working_pointer(start_ptr);
-		if(rc != FLASHER_SUCCESS) 
-		{
-			return rc;
-		}
-		uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);
-		if(start_ptr != working_addr) 
-		{
-			return ERROR_PTR_RETRIEVAL_FAILED;
-		}
-
-		size_t max_read_size = sizeof(bootloader_control.working_buffer);
-		size_t num_max_reads = len / max_read_size;
-		size_t nbytes_remainder = len % max_read_size;
-		printf("Verifying...\n");
-		unsigned char cmp_buf[sizeof(bootloader_control.working_buffer)] = {};
-
-		for(size_t i = 0; i < num_max_reads; i++)
-		{
-			printf("Reading chunk %lu, %lu bytes\n", (unsigned long)i, (unsigned long)max_read_size);
-			memset(cmp_buf, 0, sizeof(cmp_buf));
-			file.read(reinterpret_cast<char*>(cmp_buf), max_read_size);
-			bootloader_control.working_size = max_read_size;
-			rc = read_working_buffer();
-			if(rc != FLASHER_SUCCESS) {return rc;}
-			if(memcmp(cmp_buf, bootloader_periph.working_buffer, max_read_size) != 0)
-			{
-				printf("Verify FAILED: First difference found between 0x%lX and 0x%lX\n", working_addr, working_addr + max_read_size);
-				return ERROR_VERIFY_FAILED;
-			}
-			working_addr += max_read_size;
-			rc = set_working_pointer(working_addr);
-			if(rc != FLASHER_SUCCESS) {return rc;}
-		}
-		if(nbytes_remainder != 0)
-		{
-			printf("Reading final chunk %lu bytes\n", (unsigned long)nbytes_remainder);
-			memset(cmp_buf, 0, sizeof(cmp_buf));
-			file.read(reinterpret_cast<char*>(cmp_buf), nbytes_remainder);
-			bootloader_control.working_size = nbytes_remainder;
-			rc = read_working_buffer();
-			if(rc != FLASHER_SUCCESS) {return rc;}
-			if(memcmp(cmp_buf, bootloader_periph.working_buffer, nbytes_remainder) != 0)
-			{
-				printf("Verify FAILED: First difference found between 0x%lX and 0x%lX\n", working_addr, working_addr + nbytes_remainder);
-				return ERROR_VERIFY_FAILED;
-			}
-		}
-		return FLASHER_SUCCESS;
+		start_ptr = app_start;
 	}
-	else	// ELF
+	rc = set_working_pointer(start_ptr);
+	if(rc != FLASHER_SUCCESS){return rc;}
+	uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);	//redundant - set working pointer reads back changes. However it's kind of nice to confirm read works properly
+	if(start_ptr != working_addr)
+	{return ERROR_PTR_RETRIEVAL_FAILED;}
+
+
+	size_t max_read_size = sizeof(bootloader_control.working_buffer);
+	size_t num_max_reads = len/max_read_size;
+	size_t nbytes_remainder = len % max_read_size;	//number of bytes in the tail/final read
+	printf("Verifying...\n");
+	unsigned char cmp_buf[sizeof(bootloader_control.working_buffer)] = {};
+
+	for(size_t i = 0; i < num_max_reads; i++)
 	{
-		ELFIO::elfio reader;
-		if(!reader.load(path)) 
+		printf("Reading chunk %lu, %lu bytes\n", (unsigned long)i, (unsigned long)max_read_size);
+
+		/*Read a chunk from the file*/
+		memset(cmp_buf, 0, sizeof(cmp_buf));
+		handler.read_chunk(cmp_buf, max_read_size);
+
+		/*Read the corresponding chunk from the target*/
+		bootloader_control.working_size = max_read_size;
+		rc = read_working_buffer();
+		if(rc != FLASHER_SUCCESS){return rc;}
+
+		rc = memcmp(cmp_buf, bootloader_periph.working_buffer, max_read_size);
+		if(rc != 0)
 		{
-			return ERROR_INVALID_ARGUMENT;
+			printf("Verify FAILED: First difference found between 0x%lX and 0x%lX\n", working_addr, working_addr + max_read_size);
+			return ERROR_VERIFY_FAILED;
 		}
-		printf("Verifying...\n");
-		for(int si = 0; si < (int)reader.segments.size(); si++)
-		{
-			ELFIO::segment* seg = reader.segments[si];
-			if(seg->get_type() != ELFIO::PT_LOAD || seg->get_file_size() == 0) continue;
-			uintptr_t addr = (uintptr_t)seg->get_physical_address();
-			size_t seg_len = (size_t)seg->get_file_size();
-			const unsigned char* seg_data = (const unsigned char*)seg->get_data();
 
-			rc = set_working_pointer(addr);
-			if(rc != FLASHER_SUCCESS) {return rc;}
-			uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);
-			if(addr != working_addr) {return ERROR_PTR_RETRIEVAL_FAILED;}
-
-			size_t max_read_size = sizeof(bootloader_control.working_buffer);
-			size_t num_max_reads = seg_len / max_read_size;
-			size_t nbytes_remainder = seg_len % max_read_size;
-			size_t offset = 0;
-
-			for(size_t i = 0; i < num_max_reads; i++)
-			{
-				printf("Segment %d chunk %lu, %lu bytes\n", si, (unsigned long)i, (unsigned long)max_read_size);
-				bootloader_control.working_size = max_read_size;
-				rc = read_working_buffer();
-				if(rc != FLASHER_SUCCESS) return rc;
-				if(memcmp(seg_data + offset, bootloader_periph.working_buffer, max_read_size) != 0)
-				{
-					printf("Verify FAILED: First difference found between 0x%lX and 0x%lX\n", working_addr, working_addr + max_read_size);
-					return ERROR_VERIFY_FAILED;
-				}
-				offset += max_read_size;
-				working_addr += max_read_size;
-				rc = set_working_pointer(working_addr);
-				if(rc != FLASHER_SUCCESS){ return rc;}
-			}
-			if(nbytes_remainder != 0)
-			{
-				printf("Segment %d final chunk %lu bytes\n", si, (unsigned long)nbytes_remainder);
-				bootloader_control.working_size = nbytes_remainder;
-				rc = read_working_buffer();
-				if(rc != FLASHER_SUCCESS) {return rc;}
-				if(memcmp(seg_data + offset, bootloader_periph.working_buffer, nbytes_remainder) != 0)
-				{
-					printf("Verify FAILED: First difference found between 0x%lX and 0x%lX\n", working_addr, working_addr + nbytes_remainder);
-					return ERROR_VERIFY_FAILED;
-				}
-			}
-		}
-		return FLASHER_SUCCESS;
+		working_addr += max_read_size;
+		rc = set_working_pointer(working_addr);
+		if(rc != FLASHER_SUCCESS){return rc;}	//this uses sync which is redundant
 	}
+	if(nbytes_remainder != 0)
+	{
+		printf("Reading final chunk %lu bytes\n", (unsigned long)nbytes_remainder);
+
+		/*Read a chunk from the file*/
+		memset(cmp_buf, 0, sizeof(cmp_buf));
+		handler.read_chunk(cmp_buf, nbytes_remainder);
+
+		/*Read the corresponding chunk from the target*/
+		bootloader_control.working_size = nbytes_remainder;
+		rc = read_working_buffer();
+		if(rc != FLASHER_SUCCESS){return rc;}
+		
+		rc = memcmp(cmp_buf, bootloader_periph.working_buffer, nbytes_remainder);
+		if(rc != 0)
+		{
+			printf("Verify FAILED: First difference found between 0x%lX and 0x%lX\n", working_addr, working_addr + nbytes_remainder);
+			return ERROR_VERIFY_FAILED;
+		}
+	}
+	return FLASHER_SUCCESS;
 }
 
-int DarttFlasher::read_to_file(const std::string & path, uintptr_t start_ptr, size_t len)
+int DarttFlasher::read_to_file(BinaryFileHandler& handler, uintptr_t start_ptr, size_t len)
 {
-	if(initialized == false) return ERROR_NOT_INITIALIZED;
-	FileType ft = get_file_type(path);
-	if(ft != FileType::BIN) return ERROR_UNSUPPORTED_FILE_TYPE;
-
-	std::ofstream file(path, std::ios::binary);
-	if(!file.is_open())
+	if(initialized == false)
 	{
-		return ERROR_INVALID_ARGUMENT;
+		return ERROR_NOT_INITIALIZED;
 	}
 	if(start_ptr == 0)
 	{
@@ -645,6 +522,7 @@ int DarttFlasher::read_to_file(const std::string & path, uintptr_t start_ptr, si
 		uintptr_t flash_end = flash_start + (uintptr_t)attr_cpy.num_pages * (uintptr_t)attr_cpy.page_size;
 		len = (size_t)(flash_end - start_ptr);
 	}
+	handler.set_block_address(start_ptr);
 	int rc = set_working_pointer(start_ptr);
 	if(rc != FLASHER_SUCCESS){return rc;}
 	uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);
@@ -661,7 +539,7 @@ int DarttFlasher::read_to_file(const std::string & path, uintptr_t start_ptr, si
 		bootloader_control.working_size = max_read_size;
 		rc = read_working_buffer();
 		if(rc != FLASHER_SUCCESS){return rc;}
-		file.write((char*)bootloader_periph.working_buffer, max_read_size);
+		handler.write_chunk(bootloader_periph.working_buffer, max_read_size);
 		working_addr += max_read_size;
 		rc = set_working_pointer(working_addr);
 		if(rc != FLASHER_SUCCESS){return rc;}
@@ -672,73 +550,87 @@ int DarttFlasher::read_to_file(const std::string & path, uintptr_t start_ptr, si
 		bootloader_control.working_size = nbytes_remainder;
 		rc = read_working_buffer();
 		if(rc != FLASHER_SUCCESS){return rc;}
-		file.write((char*)bootloader_periph.working_buffer, nbytes_remainder);
+		handler.write_chunk(bootloader_periph.working_buffer, nbytes_remainder);
 	}
+	handler.finalize();
 	return FLASHER_SUCCESS;
 }
 
-int DarttFlasher::write_file(const std::string & path, bool verify, uintptr_t start_ptr)
+/*
+	Helper for writing a binary or elf file to the target
+*/
+int DarttFlasher::write_file(BinaryFileHandler& handler, bool verify, bool skip_save, uintptr_t start_ptr)
 {
-	if(initialized == false) return ERROR_NOT_INITIALIZED;
-
-	FileType ft = get_file_type(path);
-	if(ft == FileType::UNKNOWN) return ERROR_UNSUPPORTED_FILE_TYPE;
-
-	printf("Writing file %s\n", path.c_str());
-	printf("Flash start at location 0x%lX\n", flash_start);
+	if(initialized == false)
+	{
+		return ERROR_NOT_INITIALIZED;
+	}
+	handler.reset();
+	size_t len = handler.get_file_size();
+	printf("File size %lu bytes\n", (unsigned long)len);
 	int rc;
 
-	if(ft == FileType::BIN)
+	printf("Flash start at location 0x%lX\n", flash_start);
+	if(start_ptr == 0)
 	{
-		std::ifstream file(path, std::ios::binary | std::ios::ate);
-		if(!file.is_open()) return ERROR_INVALID_ARGUMENT;
-		size_t len = (size_t)file.tellg();
-		printf("File size %lu bytes\n", (unsigned long)len);
-		file.seekg(0);
+		start_ptr = app_start;
+	}
+	rc = set_working_pointer(start_ptr);
+	if(rc != FLASHER_SUCCESS){return rc;}
+	uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);	//redundant - set working pointer reads back changes. However it's kind of nice to confirm read works properly
+	if(start_ptr != working_addr)
+	{return ERROR_PTR_RETRIEVAL_FAILED;}
 
-		if(start_ptr == 0) start_ptr = app_start;
-		rc = set_working_pointer(start_ptr);
-		if(rc != FLASHER_SUCCESS) return rc;
-		uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);
-		if(start_ptr != working_addr) return ERROR_PTR_RETRIEVAL_FAILED;
+	//pre-erase the whole target region for incremental write
+	printf("Pre-erasing application region, starting at 0x%lX...\n", (unsigned long)app_start);
+	rc = erase_blob(start_ptr, len);	
+	if(rc != FLASHER_SUCCESS){return rc;}
+	printf("Success!\n");
+	
+	size_t max_write_size = (sizeof(bootloader_control.working_buffer)/attr_cpy.write_size)*attr_cpy.write_size;	//floor division and reinflation yields max write size. Since working buffer is 64, this probably always yields 64
+	size_t num_max_writes = len/max_write_size;
+	size_t nbytes_remainder = len % max_write_size;	//number of bytes in the tail/final write. must pad up to write size
 
-		printf("Pre-erasing region starting at 0x%lX...\n", (unsigned long)start_ptr);
-		rc = erase_blob(start_ptr, len);
-		if(rc != FLASHER_SUCCESS) return rc;
-		printf("Success!\n");
-
-		size_t max_write_size = (sizeof(bootloader_control.working_buffer)/attr_cpy.write_size)*attr_cpy.write_size;
-		size_t num_max_writes = len / max_write_size;
-		size_t nbytes_remainder = len % max_write_size;
-
-		for(size_t i = 0; i < num_max_writes; i++)
+	for(size_t i = 0; i < num_max_writes; i++)
+	{
+		printf("Writing chunk %lu, %lu bytes\n", (unsigned long)i, (unsigned long)max_write_size);
+		handler.read_chunk(bootloader_control.working_buffer, max_write_size);
+		bootloader_control.working_size = max_write_size;
+		rc = write_working_buffer();
+		if(rc != FLASHER_SUCCESS)
 		{
-			printf("Writing chunk %lu, %lu bytes\n", (unsigned long)i, (unsigned long)max_write_size);
-			file.read(reinterpret_cast<char*>(bootloader_control.working_buffer), max_write_size);
-			bootloader_control.working_size = max_write_size;
-			rc = write_working_buffer();
-			if(rc != FLASHER_SUCCESS) return rc;
-			rc = write_action_flag(WRITE_BUFFER);
-			if(rc != FLASHER_SUCCESS) return rc;
-			working_addr += max_write_size;
-			rc = set_working_pointer(working_addr);
-			if(rc != FLASHER_SUCCESS) return rc;
+			return rc;
 		}
-		if(nbytes_remainder != 0)
-		{
-			size_t padded_size = ((nbytes_remainder + attr_cpy.write_size - 1)/attr_cpy.write_size)*attr_cpy.write_size;
-			printf("Writing final chunk %lu bytes", (unsigned long)padded_size);
-			if(padded_size == nbytes_remainder) printf("\n");
-			else printf(" (padded from %lu)\n", (unsigned long)nbytes_remainder);
-			memset(bootloader_control.working_buffer, 0xFF, padded_size);
-			file.read(reinterpret_cast<char*>(bootloader_control.working_buffer), nbytes_remainder);
-			bootloader_control.working_size = padded_size;
-			rc = write_working_buffer();
-			if(rc != FLASHER_SUCCESS) return rc;
-			rc = write_action_flag(WRITE_BUFFER);
-			if(rc != FLASHER_SUCCESS) return rc;
-		}
+		rc = write_action_flag(WRITE_BUFFER);
+		if(rc != FLASHER_SUCCESS){return rc;}	
 
+		working_addr += max_write_size;
+		rc = set_working_pointer(working_addr);
+		if(rc != FLASHER_SUCCESS){return rc;}	//this uses sync which is redundant
+	}
+	if(nbytes_remainder != 0)
+	{
+		size_t padded_size = ((nbytes_remainder + attr_cpy.write_size - 1)/attr_cpy.write_size)*attr_cpy.write_size;
+		printf("Writing final chunk %lu bytes", (unsigned long)padded_size);
+		if(padded_size == nbytes_remainder)
+		{
+			printf("\n");
+		}
+		else
+		{
+			printf("(padded from %lu)\n", (unsigned long)nbytes_remainder);
+		}
+		memset(bootloader_control.working_buffer, 0xFF, padded_size);
+		handler.read_chunk(bootloader_control.working_buffer, nbytes_remainder);
+		bootloader_control.working_size = padded_size;
+		rc = write_working_buffer();
+		if(rc != FLASHER_SUCCESS){return rc;}
+		rc = write_action_flag(WRITE_BUFFER);
+		if(rc != FLASHER_SUCCESS){return rc;}
+	}
+
+	if(!skip_save)
+	{
 		printf("Writing appsize...\n");
 		dartt_mem_t dm_appsize =
 		{
@@ -747,102 +639,50 @@ int DarttFlasher::write_file(const std::string & path, bool verify, uintptr_t st
 		};
 		bootloader_control.fds.application_size = len;
 		rc = dartt_write_multi(&dm_appsize, &ds);
-		if(rc != DARTT_PROTOCOL_SUCCESS) return rc;
+		if(rc != DARTT_PROTOCOL_SUCCESS){return rc;}
 		rc = dartt_read_multi(&dm_appsize, &ds);
-		if(rc != DARTT_PROTOCOL_SUCCESS) return rc;
-		if(bootloader_periph.fds.application_size != bootloader_control.fds.application_size) return ERROR_LOAD_FAILED;
-		rc = write_action_flag(SAVE_SETTINGS);
-		if(rc != FLASHER_SUCCESS) return rc;
-		printf("Flashing Done!\n");
-
-		if(verify)
+		if(rc != DARTT_PROTOCOL_SUCCESS){return rc;}
+		if(bootloader_periph.fds.application_size != bootloader_control.fds.application_size)
 		{
-			if(start_ptr == app_start)
+			return ERROR_LOAD_FAILED;
+		}
+
+		//finally, save app size so the crc32 calc is correct
+		rc = write_action_flag(SAVE_SETTINGS);
+		if(rc != FLASHER_SUCCESS){return rc;}
+	}
+
+	printf("Flashing Done!\n");
+
+	if(verify)
+	{
+		if(start_ptr == app_start)
+		{
+			uint32_t crc32 = 0;
+			rc = get_file_crc(handler, crc32);
+			if(rc != FLASHER_SUCCESS){return ERROR_VERIFY_FAILED;}
+			rc = verify_app(crc32);
+			if(rc == FLASHER_SUCCESS)
 			{
-				uint32_t crc32 = 0;
-				rc = get_file_crc(path, crc32);
-				if(rc != FLASHER_SUCCESS) return ERROR_VERIFY_FAILED;
-				rc = verify_app(crc32);
-				if(rc == FLASHER_SUCCESS) printf("CRC Verify Success!\n");
-				else { printf("Error: Verification Failed!\n"); return rc; }
+				printf("CRC Verify Success!\n");
 			}
 			else
 			{
-				rc = readback_verification(path, start_ptr);
-				if(rc == FLASHER_SUCCESS) printf("Readback Verify Success!\n");
+				printf("Error: Verification Failed!\n");
 				return rc;
 			}
 		}
-		return FLASHER_SUCCESS;
-	}
-	else	// ELF
-	{
-		ELFIO::elfio reader;
-		if(!reader.load(path)) return ERROR_INVALID_ARGUMENT;
-
-		for(int si = 0; si < (int)reader.segments.size(); si++)
+		else
 		{
-			ELFIO::segment* seg = reader.segments[si];
-			if(seg->get_type() != ELFIO::PT_LOAD || seg->get_file_size() == 0) continue;
-			uintptr_t addr = (uintptr_t)seg->get_physical_address();
-			size_t seg_len = (size_t)seg->get_file_size();
-			const unsigned char* seg_data = (const unsigned char*)seg->get_data();
-			printf("Segment %d: addr 0x%lX, %lu bytes\n", si, (unsigned long)addr, (unsigned long)seg_len);
-
-			rc = set_working_pointer(addr);
-			if(rc != FLASHER_SUCCESS) return rc;
-			uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);
-			if(addr != working_addr) return ERROR_PTR_RETRIEVAL_FAILED;
-
-			printf("Pre-erasing segment %d region...\n", si);
-			rc = erase_blob(addr, seg_len);
-			if(rc != FLASHER_SUCCESS) return rc;
-			printf("Success!\n");
-
-			size_t max_write_size = (sizeof(bootloader_control.working_buffer)/attr_cpy.write_size)*attr_cpy.write_size;
-			size_t num_max_writes = seg_len / max_write_size;
-			size_t nbytes_remainder = seg_len % max_write_size;
-			size_t offset = 0;
-
-			for(size_t i = 0; i < num_max_writes; i++)
+			rc = readback_verification(handler, start_ptr);
+			if(rc == FLASHER_SUCCESS)
 			{
-				printf("Segment %d chunk %lu, %lu bytes\n", si, (unsigned long)i, (unsigned long)max_write_size);
-				memcpy(bootloader_control.working_buffer, seg_data + offset, max_write_size);
-				bootloader_control.working_size = max_write_size;
-				rc = write_working_buffer();
-				if(rc != FLASHER_SUCCESS) return rc;
-				rc = write_action_flag(WRITE_BUFFER);
-				if(rc != FLASHER_SUCCESS) return rc;
-				offset += max_write_size;
-				working_addr += max_write_size;
-				rc = set_working_pointer(working_addr);
-				if(rc != FLASHER_SUCCESS) return rc;
+				printf("Readback Verify Success!\n");
 			}
-			if(nbytes_remainder != 0)
-			{
-				size_t padded = ((nbytes_remainder + attr_cpy.write_size - 1)/attr_cpy.write_size)*attr_cpy.write_size;
-				printf("Segment %d final chunk %lu bytes", si, (unsigned long)padded);
-				if(padded == nbytes_remainder) printf("\n");
-				else printf(" (padded from %lu)\n", (unsigned long)nbytes_remainder);
-				memset(bootloader_control.working_buffer, 0xFF, padded);
-				memcpy(bootloader_control.working_buffer, seg_data + offset, nbytes_remainder);
-				bootloader_control.working_size = padded;
-				rc = write_working_buffer();
-				if(rc != FLASHER_SUCCESS) return rc;
-				rc = write_action_flag(WRITE_BUFFER);
-				if(rc != FLASHER_SUCCESS) return rc;
-			}
-		}
-		printf("Flashing Done!\n");
-
-		if(verify)
-		{
-			rc = readback_verification(path, 0);
-			if(rc == FLASHER_SUCCESS) printf("Readback Verify Success!\n");
 			return rc;
 		}
-		return FLASHER_SUCCESS;
 	}
+	return FLASHER_SUCCESS;
 }
 
 int DarttFlasher::start_app(void)
