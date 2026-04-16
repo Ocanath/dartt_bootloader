@@ -1,5 +1,6 @@
 #include "dartt_flasher.h"
 #include "callbacks.h"
+#include "binary_file_handler.h"
 #include <string.h>
 #include <fstream>
 #include "milliseconds.h"
@@ -370,16 +371,10 @@ int DarttFlasher::verify_app(uint32_t crc32)
 	return FLASHER_SUCCESS;	//match, return happy
 }
 
-int DarttFlasher::get_bin_crc(const std::string & path, uint32_t & crc)
+int DarttFlasher::get_file_crc(BinaryFileHandler& handler, uint32_t& crc)
 {
-	std::ifstream file(path, std::ios::binary | std::ios::ate);
-	if(!file.is_open())
-	{
-		return ERROR_INVALID_ARGUMENT;
-	}
-	size_t len = (size_t)file.tellg();
-	file.seekg(0);
-
+	handler.reset();
+	size_t len = handler.get_file_size();
 
 	size_t i;
 	int j;
@@ -390,7 +385,7 @@ int DarttFlasher::get_bin_crc(const std::string & path, uint32_t & crc)
 	while (i < len)
 	{
 		unsigned char raw = 0;
-		file.read((char*)(&raw), 1);
+		handler.read_chunk(&raw, 1);
 
 		byte = (uint32_t)raw;// Get next byte.
 		crc = crc ^ byte;
@@ -439,20 +434,14 @@ int DarttFlasher::read_working_buffer(void)
 	return FLASHER_SUCCESS;
 }
 
-int DarttFlasher::readback_verification(const std::string & path, uintptr_t start_ptr)
+int DarttFlasher::readback_verification(BinaryFileHandler& handler, uintptr_t start_ptr)
 {
 	if(initialized == false)
 	{
 		return ERROR_NOT_INITIALIZED;
 	}
-	std::ifstream file(path, std::ios::binary | std::ios::ate);
-	if(!file.is_open())
-	{
-		return ERROR_INVALID_ARGUMENT;
-	}
-	printf("Verifying file %s\n", path.c_str());
-	size_t len = (size_t)file.tellg();
-	file.seekg(0);
+	handler.reset();
+	size_t len = handler.get_file_size();
 	int rc;
 	if(start_ptr == 0)
 	{
@@ -477,13 +466,13 @@ int DarttFlasher::readback_verification(const std::string & path, uintptr_t star
 
 		/*Read a chunk from the file*/
 		memset(cmp_buf, 0, sizeof(cmp_buf));
-		file.read(reinterpret_cast<char*>(cmp_buf), max_read_size);
+		handler.read_chunk(cmp_buf, max_read_size);
 
 		/*Read the corresponding chunk from the target*/
 		bootloader_control.working_size = max_read_size;
 		rc = read_working_buffer();
 		if(rc != FLASHER_SUCCESS){return rc;}
-		
+
 		rc = memcmp(cmp_buf, bootloader_periph.working_buffer, max_read_size);
 		if(rc != 0)
 		{
@@ -501,7 +490,7 @@ int DarttFlasher::readback_verification(const std::string & path, uintptr_t star
 
 		/*Read a chunk from the file*/
 		memset(cmp_buf, 0, sizeof(cmp_buf));
-		file.read(reinterpret_cast<char*>(cmp_buf), nbytes_remainder);
+		handler.read_chunk(cmp_buf, nbytes_remainder);
 
 		/*Read the corresponding chunk from the target*/
 		bootloader_control.working_size = nbytes_remainder;
@@ -518,16 +507,11 @@ int DarttFlasher::readback_verification(const std::string & path, uintptr_t star
 	return FLASHER_SUCCESS;
 }
 
-int DarttFlasher::read_to_file(const std::string & path, uintptr_t start_ptr, size_t len)
+int DarttFlasher::read_to_file(BinaryFileHandler& handler, uintptr_t start_ptr, size_t len)
 {
 	if(initialized == false)
 	{
 		return ERROR_NOT_INITIALIZED;
-	}
-	std::ofstream file(path, std::ios::binary);
-	if(!file.is_open())
-	{
-		return ERROR_INVALID_ARGUMENT;
 	}
 	if(start_ptr == 0)
 	{
@@ -538,6 +522,7 @@ int DarttFlasher::read_to_file(const std::string & path, uintptr_t start_ptr, si
 		uintptr_t flash_end = flash_start + (uintptr_t)attr_cpy.num_pages * (uintptr_t)attr_cpy.page_size;
 		len = (size_t)(flash_end - start_ptr);
 	}
+	handler.set_block_address(start_ptr);
 	int rc = set_working_pointer(start_ptr);
 	if(rc != FLASHER_SUCCESS){return rc;}
 	uintptr_t working_addr = get_pointer(GET_WORKING_ADDR);
@@ -554,7 +539,7 @@ int DarttFlasher::read_to_file(const std::string & path, uintptr_t start_ptr, si
 		bootloader_control.working_size = max_read_size;
 		rc = read_working_buffer();
 		if(rc != FLASHER_SUCCESS){return rc;}
-		file.write((char*)bootloader_periph.working_buffer, max_read_size);
+		handler.write_chunk(bootloader_periph.working_buffer, max_read_size);
 		working_addr += max_read_size;
 		rc = set_working_pointer(working_addr);
 		if(rc != FLASHER_SUCCESS){return rc;}
@@ -565,29 +550,24 @@ int DarttFlasher::read_to_file(const std::string & path, uintptr_t start_ptr, si
 		bootloader_control.working_size = nbytes_remainder;
 		rc = read_working_buffer();
 		if(rc != FLASHER_SUCCESS){return rc;}
-		file.write((char*)bootloader_periph.working_buffer, nbytes_remainder);
+		handler.write_chunk(bootloader_periph.working_buffer, nbytes_remainder);
 	}
+	handler.finalize();
 	return FLASHER_SUCCESS;
 }
 
 /*
-	Helper for writing raw binary data to the target
+	Helper for writing a binary or elf file to the target
 */
-int DarttFlasher::write_bin(const std::string & path, bool verify, uintptr_t start_ptr)
+int DarttFlasher::write_file(BinaryFileHandler& handler, bool verify, bool skip_save, uintptr_t start_ptr)
 {
 	if(initialized == false)
 	{
 		return ERROR_NOT_INITIALIZED;
 	}
-	std::ifstream file(path, std::ios::binary | std::ios::ate);
-	if(!file.is_open())
-	{
-		return ERROR_INVALID_ARGUMENT;
-	}
-	printf("Writing file %s\n", path.c_str());
-	size_t len = (size_t)file.tellg();
+	handler.reset();
+	size_t len = handler.get_file_size();
 	printf("File size %lu bytes\n", (unsigned long)len);
-	file.seekg(0);
 	int rc;
 
 	printf("Flash start at location 0x%lX\n", flash_start);
@@ -614,7 +594,7 @@ int DarttFlasher::write_bin(const std::string & path, bool verify, uintptr_t sta
 	for(size_t i = 0; i < num_max_writes; i++)
 	{
 		printf("Writing chunk %lu, %lu bytes\n", (unsigned long)i, (unsigned long)max_write_size);
-		file.read(reinterpret_cast<char*>(bootloader_control.working_buffer), max_write_size);
+		handler.read_chunk(bootloader_control.working_buffer, max_write_size);
 		bootloader_control.working_size = max_write_size;
 		rc = write_working_buffer();
 		if(rc != FLASHER_SUCCESS)
@@ -641,7 +621,7 @@ int DarttFlasher::write_bin(const std::string & path, bool verify, uintptr_t sta
 			printf("(padded from %lu)\n", (unsigned long)nbytes_remainder);
 		}
 		memset(bootloader_control.working_buffer, 0xFF, padded_size);
-		file.read(reinterpret_cast<char*>(bootloader_control.working_buffer), nbytes_remainder);
+		handler.read_chunk(bootloader_control.working_buffer, nbytes_remainder);
 		bootloader_control.working_size = padded_size;
 		rc = write_working_buffer();
 		if(rc != FLASHER_SUCCESS){return rc;}
@@ -649,25 +629,28 @@ int DarttFlasher::write_bin(const std::string & path, bool verify, uintptr_t sta
 		if(rc != FLASHER_SUCCESS){return rc;}
 	}
 
-	printf("Writing appsize...\n");
-	dartt_mem_t dm_appsize = 
+	if(!skip_save)
 	{
-		.buf = (unsigned char *)(&bootloader_control.fds.application_size),
-		.size = sizeof(uint32_t)
-	};
-	bootloader_control.fds.application_size = len;
-	rc = dartt_write_multi(&dm_appsize, &ds);
-	if(rc != DARTT_PROTOCOL_SUCCESS){return rc;}
-	rc = dartt_read_multi(&dm_appsize, &ds);
-	if(rc != DARTT_PROTOCOL_SUCCESS){return rc;}
-	if(bootloader_periph.fds.application_size != bootloader_control.fds.application_size)
-	{
-		return ERROR_LOAD_FAILED;
+		printf("Writing appsize...\n");
+		dartt_mem_t dm_appsize =
+		{
+			.buf = (unsigned char *)(&bootloader_control.fds.application_size),
+			.size = sizeof(uint32_t)
+		};
+		bootloader_control.fds.application_size = len;
+		rc = dartt_write_multi(&dm_appsize, &ds);
+		if(rc != DARTT_PROTOCOL_SUCCESS){return rc;}
+		rc = dartt_read_multi(&dm_appsize, &ds);
+		if(rc != DARTT_PROTOCOL_SUCCESS){return rc;}
+		if(bootloader_periph.fds.application_size != bootloader_control.fds.application_size)
+		{
+			return ERROR_LOAD_FAILED;
+		}
+
+		//finally, save app size so the crc32 calc is correct
+		rc = write_action_flag(SAVE_SETTINGS);
+		if(rc != FLASHER_SUCCESS){return rc;}
 	}
-	
-	//finally, save app size so the crc32 calc is correct
-	rc = write_action_flag(SAVE_SETTINGS);
-	if(rc != FLASHER_SUCCESS){return rc;}
 
 	printf("Flashing Done!\n");
 
@@ -676,7 +659,7 @@ int DarttFlasher::write_bin(const std::string & path, bool verify, uintptr_t sta
 		if(start_ptr == app_start)
 		{
 			uint32_t crc32 = 0;
-			rc = get_bin_crc(path, crc32);
+			rc = get_file_crc(handler, crc32);
 			if(rc != FLASHER_SUCCESS){return ERROR_VERIFY_FAILED;}
 			rc = verify_app(crc32);
 			if(rc == FLASHER_SUCCESS)
@@ -691,7 +674,7 @@ int DarttFlasher::write_bin(const std::string & path, bool verify, uintptr_t sta
 		}
 		else
 		{
-			rc = readback_verification(path, start_ptr);
+			rc = readback_verification(handler, start_ptr);
 			if(rc == FLASHER_SUCCESS)
 			{
 				printf("Readback Verify Success!\n");

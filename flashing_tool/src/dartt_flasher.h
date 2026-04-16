@@ -4,6 +4,7 @@
 #include "dartt_sync.h"
 #include "dartt_bl.h"
 #include "serial.h"
+#include "binary_file_handler.h"
 #include <string.h>
 
 
@@ -18,11 +19,14 @@ class DarttFlasher
 
 		int get_version(std::string & version);
 
-		int write_bin(const std::string & path, bool verify, uintptr_t start_ptr=0);
-		int readback_verification(const std::string & path, uintptr_t start_ptr=0);		//byte for byte read back verification
-		int read_to_file(const std::string & path, uintptr_t start_ptr=0, size_t len=0);
-		int get_bin_crc(const std::string & path, uint32_t & crc);
+		int write_file(BinaryFileHandler& handler, bool verify, bool skip_save, uintptr_t start_ptr=0);
+		int readback_verification(BinaryFileHandler& handler, uintptr_t start_ptr=0);	//byte for byte read back verification
+		int read_to_file(BinaryFileHandler& handler, uintptr_t start_ptr=0, size_t len=0);
+		int get_file_crc(BinaryFileHandler& handler, uint32_t& crc);
 		int verify_app(uint32_t crc32);
+
+		uintptr_t get_app_start() const { return app_start; }
+		uintptr_t get_flash_start() const { return flash_start; }
 
 		int mass_erase(void);
 		

@@ -14,6 +14,7 @@ add_executable(dartt_flash
     flashing_tool/src/main.cpp
 	flashing_tool/src/args.cpp
 	flashing_tool/src/dartt_flasher.cpp
+	flashing_tool/src/binary_file_handler.cpp
 	flashing_tool/src/callbacks.cpp
 	flashing_tool/src/milliseconds.cpp
 	flashing_tool/src/stubs.c
