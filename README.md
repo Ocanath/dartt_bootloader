@@ -2,6 +2,18 @@
 
 This project aims to create a generic bootloader based on DARTT. The DARTT interface should theoretically be wire-able with relatively little effort to other microcontrollers and interfaces. 
 
+## Building the Flashing Tool
+
+```bash
+mkdir build && cd build
+cmake ..
+make dartt_flash
+```
+
+```bash
+cp dartt_flash ~/.local/bin/  # optional: install to user PATH
+```
+
 ## Basic Hardware/Peripheral Requirements
 
 1. Access to nonvolatile storage (read and write) for reading and storing the primary device address.
