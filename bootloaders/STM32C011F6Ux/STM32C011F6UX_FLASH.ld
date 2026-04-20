@@ -43,7 +43,7 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 
 /*Our definitions.*/
 PAGE_SIZE = 0x800;
-BOOTLOADER_SIZE = 14K;
+BOOTLOADER_SIZE = 10K;
 
 /* Memories definition */
 MEMORY

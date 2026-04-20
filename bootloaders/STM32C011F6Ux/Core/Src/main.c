@@ -21,11 +21,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "dartt.h"
+#include "dartt_bl.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+extern dartt_bl_t gl_bootloader;
 
 /* USER CODE END PTD */
 
@@ -94,7 +96,7 @@ int main(void)
   MX_DMA_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  dartt_bl_init(&gl_bootloader);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -102,7 +104,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+	dartt_bl_event_handler(&gl_bootloader);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
