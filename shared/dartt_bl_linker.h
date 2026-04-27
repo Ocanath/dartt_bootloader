@@ -31,6 +31,15 @@ const unsigned char * dartt_bl_get_flash_base(void);
  */
 const unsigned char * dartt_bl_get_app_start(void);
 
+/**
+ * @brief Get the value of the RAM keyword to block auto-entry into the bootloader
+ * If equal to the start keyword, and the persistent boot_mode is equal to the keyword, auto-launch on startup is blocked.
+ * If the persistent boot_mode is not equal to the keyword, this value is never read. It is only checked if auto-launch is set.
+ *
+ * @return the value of the shared keyword magic number
+ */
+const uint32_t dartt_bl_get_ram_blockstart_word(void);
+
 /** @} */
 
 #ifdef __cplusplus

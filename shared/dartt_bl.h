@@ -7,6 +7,8 @@ extern "C" {
 
 #include "dartt_bl_persistent.h"
 
+#define DARTT_BL_START_PROGRAM_KEY	0xFE47BA32	//magic keyword. If boot_mode is equal to this, you auto start unless the ram key is also equal to this - then you await a start instruction
+
 enum {
 	NO_ACTION = 0,
 	START_APPLICATION = 1,	//action flag to start flashed application

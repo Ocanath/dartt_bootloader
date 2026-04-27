@@ -6,6 +6,9 @@
 #include "version.h"
 #include "unity.h"
 
+extern bool gl_start_called;	//defined in stub support file. clear if checked
+extern bool gl_cleanup_called;
+extern uint32_t gl_magic_ram_word;
 extern unsigned char fake_application_area[0x2000];
 
 void test_bl_empty_init(void)
@@ -51,6 +54,7 @@ void test_bl_init_settings_loaded(void)
 	
 	dartt_bl_t bootloader_ctl = {0};
 	dartt_bl_init(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
 	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
 	TEST_ASSERT_EQUAL_MEMORY(&settings, &bootloader_ctl.fds, sizeof(dartt_bl_persistent_t));
 }
@@ -619,3 +623,66 @@ void test_persistent_settings_save(void)
 
 }
 
+void test_app_start(void)
+{
+	/*put a fake settings in*/
+	for(size_t i = 0; i < sizeof(fake_application_area); i++)
+	{
+		fake_application_area[i] = 0xFF;
+	}
+	
+	dartt_bl_t bootloader_ctl = {0};
+	dartt_bl_init(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
+	bootloader_ctl.action_flag = START_APPLICATION;
+	gl_cleanup_called = false;
+	gl_start_called = false;
+	dartt_bl_event_handler(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(true, gl_cleanup_called);
+	TEST_ASSERT_EQUAL(true, gl_start_called);
+}
+
+void test_app_autostart(void)
+{
+	/*put a fake settings in*/
+	for(size_t i = 0; i < sizeof(fake_application_area); i++)
+	{
+		fake_application_area[i] = 0xFF;
+	}
+	dartt_bl_persistent_t settings = {
+		.module_number = 1,
+		.application_size = 50,
+		.application_crc32 = 12,
+		.boot_mode = DARTT_BL_START_PROGRAM_KEY
+	};
+	uintptr_t app_start = (uintptr_t)dartt_bl_get_app_start();
+	uintptr_t page_size = 0x100;
+	TEST_ASSERT_GREATER_THAN(page_size, app_start);
+	unsigned char * fds_start = (unsigned char *)(app_start - page_size);
+	memcpy(fds_start, &settings, sizeof(settings));	
+
+	TEST_ASSERT_EQUAL(0xFFFFFFFF, gl_magic_ram_word);
+	TEST_ASSERT_EQUAL(gl_magic_ram_word, dartt_bl_get_ram_blockstart_word());
+	dartt_bl_t bootloader_ctl = {0};
+	dartt_bl_init(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(DARTT_BL_START_PROGRAM_KEY, bootloader_ctl.fds.boot_mode);
+	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
+	TEST_ASSERT_EQUAL(START_APPLICATION, bootloader_ctl.action_flag);
+
+	gl_cleanup_called = false;
+	gl_start_called = false;
+	dartt_bl_event_handler(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(true, gl_cleanup_called);
+	TEST_ASSERT_EQUAL(true, gl_start_called);
+
+
+	gl_magic_ram_word = DARTT_BL_START_PROGRAM_KEY;
+	memset(&bootloader_ctl, 0, sizeof(dartt_bl_t));
+	TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+	dartt_bl_init(&bootloader_ctl);
+	TEST_ASSERT_EQUAL(DARTT_BL_START_PROGRAM_KEY, bootloader_ctl.fds.boot_mode);
+	TEST_ASSERT_EQUAL(DARTT_BL_INITIALIZED, bootloader_ctl.action_status);
+	TEST_ASSERT_EQUAL(NO_ACTION, bootloader_ctl.action_flag);
+	gl_magic_ram_word = 0xFFFFFFFF;	//reset for other tests that might use this
+
+}

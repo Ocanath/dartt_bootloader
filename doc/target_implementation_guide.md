@@ -10,15 +10,22 @@ The following symbols must be defined by the linker script:
 
 ```
 /*Our definitions.*/
-PAGE_SIZE = 0x800;
-BOOTLOADER_SIZE = 22K;
+PAGE_SIZE = 0x800;		//implementation specific, set to correct value for proper functionality
+BOOTLOADER_SIZE = 22K;	//or 12K, or whatever it needs to be to fit the bootloader application
 
 /*
-Flash memory region definition - should inherit BOOTLOADER_SIZE
+Flash memory region definition. Define ram, magic word, and flash regions
 */
+MEMORY
+{
+	RAM	(xrw)	: ORIGIN = 0xXXXXXXXX, LENGTH = (X - 4)
+	MAGIC_WORD	(xrw)	: ORIGIN = ORIGIN(RAM) + LENGTH(RAM), LENGTH = 4
+	FLASH	(rx)	:	ORIGIN=0xXXXXXXXX, LENGTH=BOOTLOADER_SIZE
+}
 
 flash_base_addr__ = ORIGIN(FLASH);
 application_start_addr__ = ORIGIN(FLASH) + BOOTLOADER_SIZE + PAGE_SIZE;
+ram_blockstart_keyword_addr__ = ORIGIN(MAGIC_WORD);
 ```
 This defines the memory layout. The `BOOTLOADER_SIZE` may vary depending on the application. You *must* ensure that the application start address of the target to be flashed starts at the application start addr, or it will not work.
 
@@ -30,6 +37,39 @@ This defines the memory layout. The `BOOTLOADER_SIZE` may vary depending on the 
 
 
 These two symbols are used by the shared core for bootloader region protection on erase and write. Getting them wrong will either fail to protect the bootloader or block valid application operations.
+
+The final symbol `ram_blockstart_keyword_addr__` is the 'magic word' address that persists across a system reset. It is retrieved via a weak stub and can be overridden. It is checked exactly once, if and only if the persistent settings `boot_mode` is equal to the startup key. If `boot_mode` is equal to the key, and the magic word is **also equal** to the startup key, the bootloader does not automatically jump to the application - it will continue running the event loop until a START command was sent. This exists to allow auto-boot to application, with a recovery mechanism to prevent soft lockout of the bootloader.
+
+**IMPORTANT:** The application linker script must mirror this: the start address in its linker script must match `application_start_addr__`, the flash length must be reduced accordingly, and the reserved RAM address `ram_blockstart_keyword_addr__` must be reserved at the same location as well for that mechanism to work. If `ram_blockstart_keyword_addr__` will always be unused it is possible to overload the weak function definition and create an application-defined `dartt_bl_get_ram_blockstart_word()` implementation that always returns 0 (soft-bricking the bootloader unless you can beat the race) or the key value (overriding the auto-start behavior completely).
+
+Example application linker script definition: 
+
+``` 
+/*Our definitions.*/
+PAGE_SIZE = 0x800;
+BOOTLOADER_SIZE = 22K;
+
+/* Memories definition */
+MEMORY
+{
+  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = (32K-4)
+  MAGIC_WORD (xrw) : ORIGIN = ORIGIN(RAM)+LENGTH(RAM),	LENGTH = 4
+  BOOTLOADER (rx) : ORIGIN = 0x8000000,	LENGTH = BOOTLOADER_SIZE
+  FLASH    (rx)    : ORIGIN = ORIGIN(BOOTLOADER) + BOOTLOADER_SIZE + PAGE_SIZE,   LENGTH = (128K - (BOOTLOADER_SIZE + PAGE_SIZE) )	
+}
+```
+
+Remember that the layout is always:
+
+**Flash:**
+1. Bootloader (reserve however much memory is necessary, typically 10-20KB)
+1. Bootloader settings (always exactly 1 page)
+1. Application defined. Can include additional reserved pages if necessary
+
+**RAM**
+1. Normal memory (i.e. default) up to the last available word
+1. Exactly one word for blocking auto-start.
+
 ### 1.1 Linker Memory Map
 
 On an STM32, the linker script must also be modified to have proper definitions of the memory map. The bootloader size is defined there (i.e. 16K, etc). As stated above, the flash base and application start symbols must be defined, but also you **must** check whether or not the total bootloader region (bootloader program + single reserved persistent settings page) overruns into the application area. 

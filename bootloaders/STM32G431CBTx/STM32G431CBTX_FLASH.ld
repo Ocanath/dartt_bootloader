@@ -48,12 +48,14 @@ BOOTLOADER_SIZE = 22K;
 /* Memories definition */
 MEMORY
 {
-  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 32K
+  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = (32K-4)
+  MAGIC_WORD (xrw) : ORIGIN = ORIGIN(RAM)+LENGTH(RAM),	LENGTH = 4
   FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = BOOTLOADER_SIZE
 }
 
 flash_base_addr__ = ORIGIN(FLASH);
 application_start_addr__ = ORIGIN(FLASH) + BOOTLOADER_SIZE + PAGE_SIZE;
+ram_blockstart_keyword_addr__ = ORIGIN(MAGIC_WORD);
 
 /* Sections */
 SECTIONS

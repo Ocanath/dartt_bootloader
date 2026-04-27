@@ -1,16 +1,24 @@
 #include "dartt_bl_stubs.h"
 #include "dartt_bl_linker.h"
+#include <stdbool.h>
 #include "unity.h"
 
 #define TEST_PAGE_SIZE 0x100
 
 unsigned char fake_application_area[0x2000] = {};
+uint32_t gl_magic_ram_word = 0xFFFFFFFF;
+bool gl_start_called = false;
+bool gl_cleanup_called = false;
 
 const unsigned char * dartt_bl_get_flash_base(void) { return &fake_application_area[0]; }
 const unsigned char * dartt_bl_get_app_start(void)  { return &fake_application_area[0x400]; }
+const uint32_t dartt_bl_get_ram_blockstart_word(void)  { return (const uint32_t)(gl_magic_ram_word); }
 
 const unsigned char flash_base_addr__[] = "if you are reading this, you fucked up the test environment";
 const unsigned char application_start_addr__[] = "if you are reading this, you fucked up the test environment";
+const unsigned char ram_blockstart_keyword_addr__[] = "if you are reading this, you fucked up the test environment";
+
+
 
 /*
 Test scoped helper
@@ -39,11 +47,13 @@ uint32_t dartt_bl_handle_comms(dartt_bl_t * pbl)
 
 uint32_t dartt_bl_cleanup_system(void)	//stub called in START_APPLICATION
 {
+	gl_cleanup_called = true;
 	return DARTT_BL_SUCCESS;
 }
 
 uint32_t dartt_bl_start_application(dartt_bl_t * pbl)
 {
+	gl_start_called = true;	//clean up when done
 	return DARTT_BL_SUCCESS;
 }
 

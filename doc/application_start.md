@@ -3,9 +3,10 @@
 
 ### Launch Pattern
 
-- Magic word: flag startup word to jump to application, restart. Startup jump check happens before peripherals get dirty so things are set up properly. Main tradeoff is that you can soft-brick if the application gets locked out of access to the magic word.
+Application launch should be supported via implementation of the stubs `dartt_bl_start_application` and `dartt_bl_cleanup_system`. 
 
-- De-init everything: Risky. Application defined, multiple applications. Might be able to leverage reset control register to make it simpler? TBD
+- `dartt_bl_cleanup_system` should de-initialize all peripherals, DMA, etc and reset the system clock to default settings
+- `dartt_bl_start_application` should jump to the application start address via function pointer dereference to the app start address. 
 
 ### NVIC/Interrupts
 NVIC handling requires:

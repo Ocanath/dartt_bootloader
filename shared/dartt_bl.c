@@ -45,6 +45,14 @@ void dartt_bl_init(dartt_bl_t * pbl)
 		return;
 	}	
 	working_target_ptr_ = NULL;	//soft reset won't load null, so do it in init. helps with test isolation too so state isn't mutated between tests
+	if(pbl->fds.boot_mode == DARTT_BL_START_PROGRAM_KEY)
+	{
+		uint32_t ram_key = dartt_bl_get_ram_blockstart_word();
+		if(ram_key != DARTT_BL_START_PROGRAM_KEY)
+		{
+			pbl->action_flag = START_APPLICATION;	//trigger app start via event handler deferred action
+		}
+	}
 	pbl->action_status = DARTT_BL_INITIALIZED;
 }
 
