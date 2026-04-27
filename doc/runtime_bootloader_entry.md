@@ -1,52 +1,55 @@
 # Runtime Bootloader Entry
 
-## Current behavior
-Autolaunch is not implemented. The bootloader requires an explicit `START_APPLICATION` command over DARTT to launch the application. Any system using this bootloader must have knowledge of the bootloader entry pattern before the application runs.
+## Overview
 
-## Planned: RAM sentinel pattern
+The bootloader supports two startup behaviors, controlled by the `boot_mode` field in persistent settings (`dartt_bl_persistent_t.boot_mode`):
 
-Reserve a single word at the top of RAM in both the bootloader and application linker scripts using a `NOLOAD` section. This value survives a software reset but is undefined after a power cycle.
+- **`boot_mode != DARTT_BL_START_PROGRAM_KEY`** — bootloader stays in the event loop and waits for an explicit `START_APPLICATION` command over DARTT.
+- **`boot_mode == DARTT_BL_START_PROGRAM_KEY`** — autolaunch is enabled. On init, the bootloader checks a RAM sentinel word and jumps to the application immediately unless the sentinel blocks it.
 
-**Linker scripts (both bootloader and application):**
-```
-MEMORY
+## RAM Sentinel
+
+A single word at the top of RAM is reserved as a sentinel via the `MAGIC_WORD` linker region and the `ram_blockstart_keyword_addr__` symbol. It is read once during `dartt_bl_init()` via `dartt_bl_get_ram_blockstart_word()`, and only when `boot_mode` is the start key.
+
+**Autolaunch proceeds** if `boot_mode == DARTT_BL_START_PROGRAM_KEY` and the sentinel word is anything other than `DARTT_BL_START_PROGRAM_KEY`.
+
+**Autolaunch is blocked** if both `boot_mode` and the sentinel word equal `DARTT_BL_START_PROGRAM_KEY`. The bootloader stays in the event loop.
+
+```c
+if (pbl->fds.boot_mode == DARTT_BL_START_PROGRAM_KEY)
 {
-  RAM    (xrw) : ORIGIN = 0x20000000, LENGTH = 32K - 4
-  NOINIT (xrw) : ORIGIN = 0x20007FFC, LENGTH = 4
+    if (dartt_bl_get_ram_blockstart_word() != DARTT_BL_START_PROGRAM_KEY)
+    {
+        pbl->action_flag = START_APPLICATION;
+    }
 }
-
-/* in SECTIONS */
-.noinit (NOLOAD) :
-{
-    KEEP(*(.noinit))
-} >NOINIT
 ```
 
-**Shared declaration:**
-```c
-__attribute__((section(".noinit"))) volatile uint32_t bootloader_magic;
-```
+## Application Re-entry Sequence
 
-## Boot logic
-
-Two conditions must both be satisfied to launch the application:
-1. `fds.magic_word == APP_VALID_MAGIC` — a valid application has been flashed
-2. `bootloader_magic != REENTRY_MAGIC` — no reentry request is pending
+To force bootloader entry after a software reset, the application writes the key to the sentinel address before resetting:
 
 ```c
-if (bootloader_magic == REENTRY_MAGIC && fds.magic_word == APP_VALID_MAGIC) {
-    bootloader_magic = 0;   // clear so next reset behaves normally
-    // stay in bootloader
-} else if (fds.magic_word == APP_VALID_MAGIC) {
-    // launch app
-}
-// else: no valid app, stay in bootloader
-```
-
-**Application reentry sequence:**
-```c
-bootloader_magic = REENTRY_MAGIC;
+extern const unsigned char ram_blockstart_keyword_addr__[];
+*(volatile uint32_t *)ram_blockstart_keyword_addr__ = DARTT_BL_START_PROGRAM_KEY;
 NVIC_SystemReset();
 ```
 
-Power cycle → RAM undefined → sentinel check fails → falls through to magic word check → normal boot decision.
+The sentinel survives a software reset because the bootloader startup code never writes to the `MAGIC_WORD` region. On the next boot, the bootloader reads the sentinel, sees the key, and stays in the event loop.
+
+On a cold power cycle, RAM content is indeterminate. The probability of the sentinel accidentally matching the 32-bit key is 1 in 2³², so autolaunch proceeds normally after a true power cycle.
+
+## Application Linker Script Requirement
+
+The application's linker script must mirror the `MAGIC_WORD` reservation so that the application's own BSS and stack do not alias that address. See `target_implementation_guide.md` for the required layout.
+
+## Targets Without RAM Persistence
+
+On targets where RAM does not survive a system reset (e.g. ECC SRAM requiring a startup scrub), override the weak `dartt_bl_get_ram_blockstart_word()` stub with a strong definition that always returns `DARTT_BL_START_PROGRAM_KEY`. This permanently blocks autolaunch regardless of `boot_mode`, which is the safe fallback. Application re-entry must be handled through a different target-specific mechanism (GPIO, flash flag, etc.).
+
+```c
+const uint32_t dartt_bl_get_ram_blockstart_word(void)
+{
+    return DARTT_BL_START_PROGRAM_KEY;
+}
+```

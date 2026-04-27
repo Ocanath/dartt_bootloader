@@ -84,26 +84,20 @@ All functions declared in `dartt_bl_stubs.h` must be implemented. The bootloader
 
 ### `dartt_bl_get_attributes(dartt_bl_t * pbl)`
 
-Populate `pbl->attr`. Both fields must be set to nonzero values — the bootloader checks this during init and returns `DARTT_BL_INITIALIZATION_FAILURE` if either is zero.
+Populate `pbl->attr`. All three fields must be set to nonzero values — the bootloader checks this during init and returns `DARTT_BL_INITIALIZATION_FAILURE` if any is zero.
 
 ```c
 pbl->attr.page_size  // erasable page size in bytes
 pbl->attr.write_size // minimum write granularity in bytes (must be power of 2)
+pbl->attr.num_pages  // total number of pages on the target
 ```
 
-Example (STM32G431, 2KB pages, 8-byte doubleword writes):
+Example (STM32G431, 2KB pages, 8-byte doubleword writes, 64 pages):
 ```c
 pbl->attr.page_size  = 2048;
 pbl->attr.write_size = 8;
+pbl->attr.num_pages  = 64;
 ```
-
-### `dartt_bl_load_fds(dartt_bl_t * pbl)`
-
-Load the persistent settings structure from non-volatile storage into `pbl->fds`. The `dartt_bl_persistent_t` layout must match what was written by `dartt_bl_update_persistent_settings`. On first boot (blank flash), handle the unprogrammed state gracefully and return `DARTT_BL_SUCCESS` with zeroed/default values.
-
-### `dartt_bl_update_persistent_settings(dartt_bl_t * pbl)`
-
-Write `pbl->fds` to non-volatile storage. The storage location and mechanism are target-specific. Ensure the region used does not overlap the application partition or the bootloader itself.
 
 ### `dartt_bl_handle_comms(dartt_bl_t * pbl)`
 
@@ -116,17 +110,15 @@ Handle all active communication interfaces and update `pbl` from any received DA
 
 On little-endian 32-bit targets, `pbl` *can* be passed directly as the DARTT register map with no additional marshalling. This is not standard compliant but is generally okay when the target implementation is known to correctly lay out the map.
 
-### `dartt_bl_flash_erase(dartt_bl_t * pbl)`
+### `dartt_bl_flash_erase(uint32_t erase_page, uint32_t erase_num_pages)`
 
-Erase `pbl->erase_num_pages` pages starting at the page index given by `pbl->erase_page`. Use `dartt_bl_get_page_addr(pbl)` to compute the start address — do not recompute it manually.
+Erase `erase_num_pages` pages starting at the absolute page index `erase_page`. The byte address of the first page to erase is `flash_base + erase_page * page_size`.
 
 The shared core has already validated the request (nonzero page size, nonzero num pages, address above `application_start_addr__`) before this stub is called.
 
-### `dartt_bl_flash_write(dartt_bl_t * pbl)`
+### `dartt_bl_flash_write(unsigned char * dest, unsigned char * src, size_t size)`
 
-Write `pbl->working_size` bytes from `pbl->working_buffer` to the address returned by `dartt_bl_get_working_ptr()`. The shared core has already validated the request before this stub is called.
-
-`pbl->working_size` is guaranteed to be a multiple of `pbl->attr.write_size`.
+Write `size` bytes from `src` to `dest` in target flash. `dest` is the target byte address, `src` is the source data buffer, and `size` is guaranteed to be a nonzero multiple of `attr.write_size`. The shared core has already validated the request before this stub is called.
 
 ### `dartt_bl_cleanup_system(void)`
 

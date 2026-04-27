@@ -43,11 +43,11 @@ The bootloader will have a deferred action interface which allows the triggering
 
 Actions dispatched via the action register upon completion will load their return code into `action_status`, indicating success or failure, and indicate completion by setting `action_flag` to `NO_ACTION`. `action_status` is considered stale if `action_flag` is nonzero, and always corresponds to the most recently completed dispatched action.
 
-Certain memory operations may trigger a HardFault. **The recommended action on hardfault is always to reset** `action_status` gets loaded 
+Certain memory operations may trigger a HardFault. **The recommended action on hardfault is always to reset.** After reset, `dartt_bl_init()` sets `action_status` to `DARTT_BL_INITIALIZED`, which the flashing tool uses to detect that a fault occurred during the previous operation.
 
 ### Pointers
 
-The application start point should be checked by the flashing tool to make sure it matches the expected value from the application binary. The application start pointer is a compile time constant in the bootloader firmware (based on linker scripting) and is also protocol defined as **TODO: FIGURE OUT HOW MUCH SPACE TO ALLOCATE FOR THE BOOTLOADER** bytes.
+The application start point should be checked by the flashing tool to make sure it matches the expected value from the application binary. The application start pointer is a compile-time constant resolved by the linker script via `application_start_addr__`. The bootloader partition size is fixed per target and defined in its linker script.
 
 The flashing tool should throw a code and exit if the bootloader start address does not match the start address of the target to flash.
 
@@ -79,8 +79,6 @@ There is one address range explicitly blocked by the bootloader itself: the boot
 
 Attempted writes to illegal memory-mapped regions can result in a hardfault. There is no explicit protection from hardfaults in this protocol - it is the implementer's responsibility to ensure hardfaults result in a reset for proper bootloader recovery.
 
-**TODO:** - Writes on target likely have an MTU/write size alignment which we'll likely want to load as an attribute. Investigate
-
 ### Erasure
 
 Erasure works differently. The page attributes must be read from `.page_size`. The flashing tool must set `.erase_page` and `.erase_num_pages` before running the deferred erase operation via `ERASE_PAGES`. This calls a stub which must be implemented on each specific target.
@@ -95,15 +93,15 @@ The deferred `GET_CRC32` action calculates a crc32 value from `application_start
 
 ## Boundary checks
 
-This application gets the bootloader flash region boundary via linker script. A dedicated internal variable:
+The bootloader flash region boundary is defined entirely by the linker script. Three symbols are resolved at link time and accessed via weak accessor functions in `dartt_bl_linker.c`:
 
-``` C
-extern uint32_t application_start_address__;
+```c
+extern const unsigned char flash_base_addr__[];
+extern const unsigned char application_start_addr__[];
+extern const unsigned char ram_blockstart_keyword_addr__[];
 ```
 
-Will be defined by the linker and contain the correct value. It will specifically always be the first valid address for the application. It gets loaded into the comm struct on init.
-
-**Note:** We may also embed information about the correct persistent settings location this way as well.
+`application_start_addr__` is always the first valid address for application code and defines the bootloader protection boundary for erase and write operations. `ram_blockstart_keyword_addr__` is the address of the RAM sentinel word used for runtime bootloader re-entry (see `doc/runtime_bootloader_entry.md`).
 
 The application start is always set as the bootloader boundary/end.
 
