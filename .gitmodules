@@ -6,7 +6,7 @@
 	url = https://github.com/ocanath/byte-stuffing
 [submodule "external/serial-cross-platform"]
 	path = external/serial-cross-platform
-	url = https://github.com/ocanah/serial-cross-platform
+	url = https://github.com/ocanath/serial-cross-platform
 [submodule "external/ELFIO"]
 	path = external/ELFIO
 	url = https://github.com/serge1/ELFIO.git
