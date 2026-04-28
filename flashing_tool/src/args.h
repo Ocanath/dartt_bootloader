@@ -27,8 +27,8 @@ typedef struct {
     bool            get_version;    /* --version */
     bool            enable_autoboot;  /* --enable-autoboot */
     bool            disable_autoboot; /* --disable-autoboot */
-    bool            set_address;      /* --set_address */
-    unsigned char   new_address;      /* value for --set_address */
+    bool            set_address;      /* --set-address */
+    unsigned char   new_address;      /* value for --set-address */
 
     /* address overrides */
     uintptr_t        origin_addr;     /* --origin (bin only) */
