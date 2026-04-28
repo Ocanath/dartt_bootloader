@@ -561,7 +561,7 @@ int DarttFlasher::read_to_file(const std::string & path, uintptr_t start_ptr, si
 	}
 	if(nbytes_remainder != 0)
 	{
-		printf("Reading final chunk, %lu bytes\n", (unsigned long)max_read_size);
+		printf("Reading final chunk, %lu bytes\n", (unsigned long)nbytes_remainder);
 		bootloader_control.working_size = nbytes_remainder;
 		rc = read_working_buffer();
 		if(rc != FLASHER_SUCCESS){return rc;}
@@ -713,4 +713,56 @@ int DarttFlasher::start_app(void)
 		return rc;
 	}
 	return FLASHER_SUCCESS;
+}
+
+
+int DarttFlasher::update_target_address(unsigned char addr)
+{
+	int rc = 0;
+	dartt_mem_t module_number_slice = { 
+		(unsigned char *)(&bootloader_control.fds.module_number),
+		sizeof(uint32_t)
+	};
+	bootloader_control.fds.module_number = addr;
+	rc = dartt_write_multi(&module_number_slice, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS)
+	{
+		return rc;
+	}
+	//possibly may want to add a delay here
+	ds.address = addr;
+	rc = dartt_read_multi(&module_number_slice, &ds);
+	if(rc != DARTT_PROTOCOL_SUCCESS)
+	{
+		return rc;
+	}
+	if(bootloader_periph.fds.module_number != addr)
+	{
+		return ERROR_LOAD_FAILED;
+	}
+	return write_action_flag(SAVE_SETTINGS);
+}
+
+int DarttFlasher::set_target_bootmode(bool enabled)
+{
+	dartt_mem_t boot_mode_slice = 
+	{
+		(unsigned char *)(&bootloader_control.fds.boot_mode),
+		sizeof(uint32_t)
+	};
+	int rc = 0;
+	if(enabled)
+	{
+		bootloader_control.fds.boot_mode = DARTT_BL_START_PROGRAM_KEY;	//set to key
+		bootloader_periph.fds.boot_mode = 0;	//use sync hack for api readback verification
+		rc = dartt_sync(&boot_mode_slice, &ds);
+	}
+	else
+	{
+		bootloader_control.fds.boot_mode = 0;	//set to not the key
+		bootloader_periph.fds.boot_mode = 0xFFFFFFFF;	//use sync hack for api readback verification
+		rc = dartt_sync(&boot_mode_slice, &ds);
+	}
+	if(rc != DARTT_PROTOCOL_SUCCESS) return rc;
+	return write_action_flag(SAVE_SETTINGS);
 }

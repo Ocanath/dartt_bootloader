@@ -18,13 +18,17 @@ typedef struct {
     const char *    output_file;    /* -o: destination for read operations */
 
     /* operation flags */
-    bool            launch;         /* --launch */
+    bool            launch;         /* --launch / --start */
     bool            eraseall;       /* --eraseall */
     bool            verify_only;    /* --verify */
     bool            no_verify;      /* --no-verify */
     bool            no_application; /* --no-application */
     bool            skip_save;      /* --skip-save */
     bool            get_version;    /* --version */
+    bool            enable_autoboot;  /* --enable-autoboot */
+    bool            disable_autoboot; /* --disable-autoboot */
+    bool            set_address;      /* --set_address */
+    unsigned char   new_address;      /* value for --set_address */
 
     /* address overrides */
     uintptr_t        origin_addr;     /* --origin (bin only) */

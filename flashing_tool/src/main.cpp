@@ -53,6 +53,27 @@ int main(int argc, char** argv)
 		printf("Sending start signal!\n");
 		return flasher.start_app();
 	}
+	else if(args.set_address)
+	{
+		int rc = flasher.update_target_address(args.new_address);
+		if(rc == 0) printf("Address updated\n");
+		else printf("Error: code %d\n", rc);
+		return rc;
+	}
+	else if(args.enable_autoboot)
+	{
+		int rc = flasher.set_target_bootmode(true);
+		if(rc == 0) printf("Autoboot enabled\n");
+		else printf("Error: code %d\n", rc);
+		return rc;
+	}
+	else if(args.disable_autoboot)
+	{
+		int rc = flasher.set_target_bootmode(false);
+		if(rc == 0) printf("Autoboot disabled\n");
+		else printf("Error: code %d\n", rc);
+		return rc;
+	}
 	if(args.output_file != NULL)
 	{
 		uintptr_t rorigin = args.has_rorigin ? args.rorigin : 0;

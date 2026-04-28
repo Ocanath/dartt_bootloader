@@ -17,7 +17,8 @@ class DarttFlasher
 		int init(void);
 
 		int get_version(std::string & version);
-
+		int update_target_address(unsigned char addr);
+		int set_target_bootmode(bool enabled);
 		int write_bin(const std::string & path, bool verify, uintptr_t start_ptr=0);
 		int readback_verification(const std::string & path, uintptr_t start_ptr=0);		//byte for byte read back verification
 		int read_to_file(const std::string & path, uintptr_t start_ptr=0, size_t len=0);

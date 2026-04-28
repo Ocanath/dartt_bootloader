@@ -18,6 +18,9 @@ static void print_help(const char *prog)
         "  --verify             Verify only, skip flashing\n"
         "  --version            Retrieve and print bootloader version\n"
         "  -o <file>            Read memory out to .bin or .elf\n"
+		"  --set_address		Set the bootloader address\n"
+		"  --enable-autoboot    Set the boot mode word\n"		
+		"  --disable-autoboot   Clear the boot mode word\n"
         "\n"
         "Flashing options:\n"
         "  --origin <addr>       Override start address for .bin files (hex or decimal)\n"
@@ -108,6 +111,26 @@ args_t parse_args(int argc, char **argv)
         else if (strcmp(argv[i], "--version") == 0)
         {
             args.get_version = true;
+        }
+        else if (strcmp(argv[i], "--enable-autoboot") == 0)
+        {
+            args.enable_autoboot = true;
+        }
+        else if (strcmp(argv[i], "--disable-autoboot") == 0)
+        {
+            args.disable_autoboot = true;
+        }
+        else if (strcmp(argv[i], "--set_address") == 0)
+        {
+            if (i + 1 >= argc) die("'--set_address' requires an address argument");
+            unsigned long v = strtoul(argv[++i], NULL, 0);
+            if (v > 255)
+            {
+                fprintf(stderr, "error: address '%s' out of range (0-255)\n", argv[i]);
+                exit(1);
+            }
+            args.new_address = (unsigned char)v;
+            args.set_address = true;
         }
         else if (strcmp(argv[i], "-o") == 0)
         {
