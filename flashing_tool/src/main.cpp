@@ -3,7 +3,7 @@
 #include "dartt_sync.h"
 #include "args.h"
 #include "dartt_bl.h"
-#include <elfio/elfio.hpp>
+// #include <elfio/elfio.hpp>
 #include "callbacks.h"
 #include "version.h"
 #include "dartt_flasher.h"

@@ -9,7 +9,7 @@ DarttFlasher::DarttFlasher(unsigned char addr)
 {
 	tx_buf_mem = new unsigned char[_DARTT_SERIAL_BUFFER_SIZE];
 	rx_buf_mem = new unsigned char[_DARTT_SERIAL_BUFFER_SIZE];
-	ds = (dartt_sync_t){};
+	ds = {};
 	ds.address = addr;
 	ds.base_offset = 0;
 	ds.msg_type = TYPE_SERIAL_MESSAGE;
@@ -46,7 +46,7 @@ DarttFlasher::DarttFlasher(unsigned char addr)
 	timeout = 5000;
 	target_pointer_size = 0;
 	initialized = false;
-	attr_cpy = (dartt_bl_attributes_t){};
+	attr_cpy = {};
 	app_start = 0;
 	flash_start = 0;
 }
@@ -64,7 +64,7 @@ int DarttFlasher::init(void)
 {
 	if(initialized)
 	{
-		return ERROR_ALREADY_INITIALIZED;
+		return ERROR_FLASHER_ALREADY_INITIALIZED;
 	}
 	int rc = 0;
 	rc = dartt_read_multi(&ds.ctl_base, &ds);
@@ -121,7 +121,7 @@ int DarttFlasher::poll_action_flags(uint32_t timeout_ms)
 			}
 		}
 	}
-	return	ERROR_TIMEOUT;
+	return	ERROR_FLASHER_TIMEOUT;
 }
 
 int DarttFlasher::write_action_flag(uint32_t flag)
