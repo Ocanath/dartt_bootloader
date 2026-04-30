@@ -2,6 +2,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Debug dartt_flash (MSVC)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/dartt_flash.exe",
+            "args": ["0", "--start"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "preLaunchTask": "cmake-build-dartt_flash"
+        },
+        {
             "name": "Debug Active Ceedling Test",
             "type": "cppdbg",
             "request": "launch",
