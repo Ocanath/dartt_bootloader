@@ -10,7 +10,8 @@
 
 int main(int argc, char** argv)
 {
-	args_t args = parse_args(argc, argv);
+	args_t args = {};
+	parse_args(argc, argv, args);
 
 	DarttFlasher flasher(args.dartt_address);
 	flasher.ser.autoconnect(args.baudrate);

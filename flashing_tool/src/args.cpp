@@ -58,7 +58,7 @@ static uint32_t parse_uint32(const char *s, const char *name)
     return (uint32_t)v;
 }
 
-args_t parse_args(int argc, char **argv)
+void parse_args(int argc, char **argv, args_t & args)
 {
     if (argc < 2)
     {
@@ -66,7 +66,6 @@ args_t parse_args(int argc, char **argv)
         exit(1);
     }
 
-    args_t args = {};
     args.baudrate = 921600;
 
     int positional = 0;
@@ -204,6 +203,4 @@ args_t parse_args(int argc, char **argv)
         if (ext != NULL && strcmp(ext, ".elf") == 0)
             die("'--origin' is invalid for .elf files");
     }
-
-    return args;
 }

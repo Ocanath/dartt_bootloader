@@ -46,6 +46,6 @@ typedef struct {
 /* Parse command-line arguments.
  * Prints help and exits on -h/--help.
  * Prints error and exits on missing required arguments or invalid input. */
-args_t parse_args(int argc, char **argv);
+void parse_args(int argc, char **argv, args_t & args);
 
 #endif
