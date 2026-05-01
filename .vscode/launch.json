@@ -6,7 +6,7 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/Debug/dartt_flash.exe",
-            "args": ["0", "--start"],
+            "args": ["255", "--start"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

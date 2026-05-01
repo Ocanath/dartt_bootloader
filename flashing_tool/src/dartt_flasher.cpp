@@ -2,6 +2,8 @@
 #include "callbacks.h"
 #include <string.h>
 #include <fstream>
+#include <thread>
+#include <chrono>
 #include "milliseconds.h"
 #include "dartt_bl.h"
 
@@ -712,6 +714,7 @@ int DarttFlasher::start_app(void)
 	{
 		return rc;
 	}
+	std::this_thread::sleep_for(std::chrono::milliseconds(200));
 	return FLASHER_SUCCESS;
 }
 
