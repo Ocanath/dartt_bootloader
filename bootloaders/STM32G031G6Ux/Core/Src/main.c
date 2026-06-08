@@ -16,10 +16,19 @@ int main(void)
 	MX_USART2_UART_Init();
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 
+	uint32_t led_ts = 0;
+
 	dartt_bl_init(&gl_bootloader);
 	while (1)
 	{
 		dartt_bl_event_handler(&gl_bootloader);
+
+		uint32_t tick = HAL_GetTick();
+		if(tick - led_ts > 333)
+		{
+			led_ts = tick;
+			HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_7);
+		}
 	}
 }
 

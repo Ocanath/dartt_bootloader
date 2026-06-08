@@ -115,7 +115,7 @@ uint32_t dartt_bl_flash_write(unsigned char * dest, unsigned char * src, size_t 
 	uint32_t error = HAL_FLASH_ERROR_NONE;
 	size_t srcidx = 0;
 	uint32_t dest_addr = (uint32_t)(dest);	//HAL casts pointer to uint32_t - equal to uintptr_t but locked to our target. acceptable
-	for(size_t i = 0; i < num_writes; i++)
+	for(size_t widx = 0; widx < num_writes; widx++)
 	{
 
 		//little endian data load into payload word
@@ -141,7 +141,7 @@ uint32_t dartt_bl_flash_write(unsigned char * dest, unsigned char * src, size_t 
 
 	if(error != HAL_FLASH_ERROR_NONE)
 	{
-		return DARTT_BL_ERASE_BLOCKED;
+		return DARTT_BL_WRITE_BLOCKED;
 	}
 	return DARTT_BL_SUCCESS;
 }

@@ -38,25 +38,6 @@ uint32_t dartt_bl_handle_comms(dartt_bl_t * pbl)
 {
 	unsigned char dartt_misc_address = dartt_get_complementary_address((unsigned char)(pbl->fds.module_number & 0xFF));
 
-
-//	if(HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0) != 0)
-//	{
-//		HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &can_rx_header, can_rx_data.u8);
-//		can_rx_alias.len = (can_rx_header.DataLength >> 16) & 0xF;
-//		if (can_rx_header.Identifier == dartt_misc_address)
-//		{
-//		    int rc = dartt_frame_to_payload(&can_rx_alias, TYPE_ADDR_CRC_MESSAGE, PAYLOAD_ALIAS, &gl_can_rx_pld_msg);
-//		    if(rc == DARTT_PROTOCOL_SUCCESS)
-//		    {
-//		    	dartt_parse_general_message(&gl_can_rx_pld_msg, TYPE_ADDR_CRC_MESSAGE, &bootloader_alias, &can_tx_alias);
-//		    }
-//		    if(can_tx_alias.len != 0 && rc == DARTT_PROTOCOL_SUCCESS)
-//		    {
-//		    	send_fdcan_frame(MASTER_MISC_ADDRESS, &can_tx_alias);
-//		    }
-//		}
-//	}
-
 	/*Handle DARTT over UART*/
 	if(m_huart2.rx_decoded.length != 0)
 	{
@@ -116,7 +97,7 @@ uint32_t dartt_bl_flash_write(unsigned char * dest, unsigned char * src, size_t 
 	uint32_t error = HAL_FLASH_ERROR_NONE;
 	size_t srcidx = 0;
 	uint32_t dest_addr = (uint32_t)(dest);	//HAL casts pointer to uint32_t - equal to uintptr_t but locked to our target. acceptable
-	for(size_t i = 0; i < num_writes; i++)
+	for(size_t widx = 0; widx < num_writes; widx++)
 	{
 
 		//little endian data load into payload word
@@ -142,7 +123,7 @@ uint32_t dartt_bl_flash_write(unsigned char * dest, unsigned char * src, size_t 
 
 	if(error != HAL_FLASH_ERROR_NONE)
 	{
-		return DARTT_BL_ERASE_BLOCKED;
+		return DARTT_BL_WRITE_BLOCKED;
 	}
 	return DARTT_BL_SUCCESS;
 }
