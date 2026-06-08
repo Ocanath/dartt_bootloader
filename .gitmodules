@@ -10,3 +10,6 @@
 [submodule "external/serial-cross-platform"]
 	path = external/serial-cross-platform
 	url = https://github.com/ocanath/serial-cross-platform
+[submodule "external/stm32-dma-cobs-uart"]
+	path = external/stm32-dma-cobs-uart
+	url = https://github.com/ocanath/stm32-dma-cobs-uart
