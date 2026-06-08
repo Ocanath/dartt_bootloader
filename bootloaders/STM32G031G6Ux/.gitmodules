@@ -1,0 +1,6 @@
+[submodule "external/dartt-protocol"]
+	path = external/dartt-protocol
+	url = https://github.com/ocanath/dartt-protocol
+[submodule "external/stm32-dma-cobs-uart"]
+	path = external/stm32-dma-cobs-uart
+	url = https://github.com/ocanath/stm32-dma-cobs-uart
