@@ -41,12 +41,21 @@ _estack = ORIGIN(RAM) + LENGTH(RAM); /* end of "RAM" Ram type memory */
 _Min_Heap_Size = 0x200; /* required amount of heap */
 _Min_Stack_Size = 0x400; /* required amount of stack */
 
+/*Our definitions.*/
+PAGE_SIZE = 0x800;
+BOOTLOADER_SIZE = 18K;
+
 /* Memories definition */
 MEMORY
 {
-  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 8K
-  FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = 32K
+  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = (8K - 4)
+  MAGIC_WORD (xrw) : ORIGIN = ORIGIN(RAM)+LENGTH(RAM),	LENGTH = 4
+  FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = BOOTLOADER_SIZE
 }
+
+flash_base_addr__ = ORIGIN(FLASH);
+application_start_addr__ = ORIGIN(FLASH) + BOOTLOADER_SIZE + PAGE_SIZE;
+ram_blockstart_keyword_addr__ = ORIGIN(MAGIC_WORD);
 
 /* Sections */
 SECTIONS
