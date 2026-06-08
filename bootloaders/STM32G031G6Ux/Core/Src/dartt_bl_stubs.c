@@ -10,6 +10,7 @@
 #include "cobs.h"
 #include "dartt.h"
 #include "m_dma_uart.h"
+#include "uart_mem.h"
 
 #define NUM_PAGES 		64
 #define PAGE_SIZE 		0x800
