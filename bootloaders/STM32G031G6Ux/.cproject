@@ -42,10 +42,10 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths.1104690026" name="Include paths (-I)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
-									<listOptionValue builtIn="false" value="../external/stm32-dma-cobs-uart/byte-stuffing/HDLC"/>
-									<listOptionValue builtIn="false" value="../external/stm32-dma-cobs-uart/byte-stuffing/C-COBS"/>
-									<listOptionValue builtIn="false" value="../external/dartt-protocol/src"/>
-									<listOptionValue builtIn="false" value="../external/stm32-dma-cobs-uart/dma-uart-src"/>
+									<listOptionValue builtIn="false" value="../../../external/byte-stuffing/HDLC"/>
+									<listOptionValue builtIn="false" value="../../../external/byte-stuffing/C-COBS"/>
+									<listOptionValue builtIn="false" value="../../../external/dartt-protocol/src"/>
+									<listOptionValue builtIn="false" value="../../../external/stm32-dma-cobs-uart/dma-uart-src"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32G0xx_HAL_Driver/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32G0xx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32G0xx/Include"/>
@@ -120,8 +120,8 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths.1740006724" name="Include paths (-I)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
-									<listOptionValue builtIn="false" value="../external/stm32-dma-cobs-uart/byte-stuffing/HDLC"/>
-									<listOptionValue builtIn="false" value="../external/stm32-dma-cobs-uart/byte-stuffing/C-COBS"/>
+									<listOptionValue builtIn="false" value="../external/byte-stuffing/HDLC"/>
+									<listOptionValue builtIn="false" value="../external/byte-stuffing/C-COBS"/>
 									<listOptionValue builtIn="false" value="../external/dartt-protocol/src"/>
 									<listOptionValue builtIn="false" value="../external/stm32-dma-cobs-uart/dma-uart-src"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32G0xx_HAL_Driver/Inc"/>
