@@ -6,41 +6,51 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_subdirectory(external/dartt-protocol)
-add_subdirectory(external/byte-stuffing)
-add_subdirectory(external/serial-cross-platform)
+if(NOT TARGET dartt_protocol)
+    add_subdirectory(external/dartt-protocol)
+endif()
+if(NOT TARGET cobs)
+    add_subdirectory(external/byte-stuffing)
+endif()
+if(NOT TARGET serial)
+    add_subdirectory(external/serial-cross-platform)
+endif()
 
-add_executable(dartt_flash
-    flashing_tool/src/main.cpp
-	flashing_tool/src/args.cpp
-	flashing_tool/src/dartt_flasher.cpp
-	flashing_tool/src/callbacks.cpp
-	flashing_tool/src/milliseconds.cpp
-	flashing_tool/src/stubs.c
-	shared/dartt_bl.c
+add_library(dartt_flasher_lib STATIC
+    flashing_tool/src/dartt_flasher.cpp
+    flashing_tool/src/callbacks.cpp
+    flashing_tool/src/milliseconds.cpp
+    flashing_tool/src/stubs.c
+    shared/dartt_bl.c
 )
 
-target_include_directories(dartt_flash PRIVATE
-    flashing_tool/src
-    external/dartt-protocol/src
-	external/byte-stuffing/C-COBS
-	# external/ELFIO
-	shared
+target_include_directories(dartt_flasher_lib PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/flashing_tool/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/shared
 )
 
-target_link_libraries(dartt_flash PRIVATE
+target_link_libraries(dartt_flasher_lib PUBLIC
     dartt_protocol
-	dartt_checksum
+    dartt_checksum
     cobs
-	PPP
-	bytestream
+    PPP
+    bytestream
     serial
 )
 
-add_custom_target(generate_version ALL
-    COMMAND ruby ${CMAKE_SOURCE_DIR}/scripts/run_get_version.rb
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
-    COMMENT "Generating version.h"
-)
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    add_executable(dartt_flash
+        flashing_tool/src/main.cpp
+        flashing_tool/src/args.cpp
+    )
 
-add_dependencies(dartt_flash generate_version)
+    target_link_libraries(dartt_flash PRIVATE dartt_flasher_lib)
+
+    add_custom_target(generate_version ALL
+        COMMAND ruby ${CMAKE_SOURCE_DIR}/scripts/run_get_version.rb
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
+        COMMENT "Generating version.h"
+    )
+
+    add_dependencies(dartt_flash generate_version)
+endif()
