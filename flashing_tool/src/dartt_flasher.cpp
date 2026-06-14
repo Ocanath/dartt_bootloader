@@ -7,7 +7,7 @@
 #include "milliseconds.h"
 #include "dartt_bl.h"
 
-DarttFlasher::DarttFlasher(unsigned char addr)
+DarttFlasher::DarttFlasher(unsigned char addr, Serial * ser) : ser(ser)
 {
 	tx_buf_mem = new unsigned char[_DARTT_SERIAL_BUFFER_SIZE];
 	rx_buf_mem = new unsigned char[_DARTT_SERIAL_BUFFER_SIZE];
@@ -22,9 +22,9 @@ DarttFlasher::DarttFlasher(unsigned char addr)
 	ds.rx_buf.size = _DARTT_SERIAL_BUFFER_SIZE - _DARTT_NUM_BYTES_COBS_OVERHEAD;	//DO NOT CHANGE. This is for a good reason. See above note
 	ds.rx_buf.len = 0;
 	ds.blocking_tx_callback = &_tx_blocking_callback;
-	ds.user_context_tx = (void*)(&ser);
+	ds.user_context_tx = (void*)(ser);
 	ds.blocking_rx_callback = &_rx_blocking_callback;
-	ds.user_context_rx = (void*)(&ser);
+	ds.user_context_rx = (void*)(ser);
 	ds.timeout_ms = 1000;
 
 	ds.ctl_base.buf = (unsigned char *)(&bootloader_control);
@@ -57,7 +57,6 @@ DarttFlasher::~DarttFlasher()
 {
 	delete[] tx_buf_mem;
 	delete[] rx_buf_mem;
-	ser.disconnect();
 }
 
 

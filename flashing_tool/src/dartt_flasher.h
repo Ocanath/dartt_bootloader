@@ -10,9 +10,9 @@
 class DarttFlasher
 {
 	public:
-		DarttFlasher(unsigned char addr);
+		DarttFlasher(unsigned char addr, Serial * ser);
 		~DarttFlasher();
-		Serial ser;
+		Serial * ser;
 		
 		int init(void);
 

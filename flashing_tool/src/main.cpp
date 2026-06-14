@@ -13,8 +13,17 @@ int main(int argc, char** argv)
 	args_t args = {};
 	parse_args(argc, argv, args);
 
-	DarttFlasher flasher(args.dartt_address);
-	flasher.ser.autoconnect(args.baudrate);
+	Serial ser;
+	if(args.port) 
+	{
+		ser.connect(args.port, args.baudrate);
+	}
+	else
+	{
+		ser.autoconnect(args.baudrate);
+	}
+
+	DarttFlasher flasher(args.dartt_address, &ser);
 	flasher.init();
 	uint32_t crc32 = 0;	//for verification
 
@@ -151,7 +160,7 @@ int main(int argc, char** argv)
 	{
 		printf("Error %d\n", rc);
 	}
-	
+	ser.disconnect();
 	return rc;
 }
 
