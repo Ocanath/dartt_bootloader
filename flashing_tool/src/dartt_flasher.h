@@ -24,6 +24,7 @@ class DarttFlasher
 		int read_to_file(const std::string & path, uintptr_t start_ptr=0, size_t len=0);
 		int get_bin_crc(const std::string & path, uint32_t & crc);
 		int verify_app(uint32_t crc32);
+		int poll_action_flags(uint32_t timeout_ms);
 
 		int mass_erase(void);
 		
@@ -72,7 +73,6 @@ class DarttFlasher
 
 		int get_target_pointer_size(void);
 
-		int poll_action_flags(uint32_t timeout_ms);
 		int write_action_flag(uint32_t flag);	//helper to load control with proper flags before dispatch. called before poll
 		uintptr_t get_pointer(uint32_t flag);
 		int set_working_pointer(uintptr_t pointer);
