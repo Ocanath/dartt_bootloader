@@ -2,33 +2,53 @@
 
 This project aims to create a generic bootloader based on DARTT. The DARTT interface should theoretically be wire-able with relatively little effort to other microcontrollers and interfaces. 
 
-## Building the Flashing Tool
+## Flashing Tool and API
 
+### Building the Flashing Tool
+From the project root:
 ```bash
-mkdir build && cd build
-cmake ..
-make dartt_flash
+cmake -B build
+cmake --build build
 ```
-
+To install the flashing tool:
 ```bash
 cp dartt_flash ~/.local/bin/  # optional: install to user PATH
 ```
 
-## Basic Hardware/Peripheral Requirements
+### Linking the API
+
+The bootloader API is linkable via the top level:
+
+```cmake
+add_subdirectory(external/dartt_bootloader)
+target_link_libraries(your_target PRIVATE dartt_flasher_lib)
+```
+
+## Implementing a New Target
+
+The core workflow for implementing this bootloader on a new target is as follows:
+
+- Link to the core C library under [shared](shared/) 
+- Implement all stubs declared in [dartt_bl_stubs.h](shared/dartt_bl_stubs.h), including the callback for wiring communication interfaces to the DARTT control map and all flash primitives (read/write/erase).
+- Define memory layout (bootloader and flash regions, autoboot RAM word location) in your linker script. This can vary from target to target - treat the linker script definition as authoritative for your specific bootloader, and ensure the application linker script start location matches.
+
+You can find multiple tested examples of this under [bootloaders/](bootloaders/) for different targets. It is recommended for your embedded application and bootloader to be pinned in the same top level repo or shared in the same monorepo. 
+
+### Basic Hardware/Peripheral Requirements
 
 1. Access to nonvolatile storage (read and write) for reading and storing the primary device address.
 
 1. Access to the interface over which DARTT will be routed, such as UART, SPI, FDCAN, etc. A Serial based flashing tool is provided in this repository.
 
-## Code Architecture
+### Code Architecture
 
 The bootloader core is implemented in `shared/`. The core bootloader logic and call sites are defined there. All hardware facing functions will be declared in shared with no definition - it is up to the specific project that links them to define the stubs.
 
 This project will have a set number of dedicated bootloader projects that target a specific hardware platform and link to `shared/`. Each bootloader sub-project will be a fully functional & tested bootloader program that compiles to an executable binary for the target platform.
 
-Executable projects will be in `bootloaders/`. 
+Functional examples will be in `bootloaders/`. 
 
-## Functions
+### Functions
 
 The bootloader will have a deferred action interface which allows the triggering of certain commands. These can include:
 
