@@ -42,10 +42,10 @@ The bootloader structure will be reorganized, as follows:
 
 | Name | Word |
 |--| -- |
-| Status Register | 0 |
-| Nonce | 1-6 |
-| Working Buffer (ciphertext) | 7-22|
-| Action Register (ciphertext) | 23 |
+| Nonce | 0-5 |
+| Working Buffer (ciphertext) | 6-21|
+| Action Register (ciphertext) | 22 |
+| Status Register (ciphertext) | 23 |
 | Message Authentication Code | 24-27 |
 | Working size | 28 |
 | Additional cleartext parameters... |28 - N|
@@ -69,7 +69,7 @@ The general system flow ideally will be something like this:
 1. Peripheral init. Create a new, non-repeating, cleartext random word R and place it in the DARTT map, enforcing read-only behavior. 
 1. Peripheral uses R to create session keys (host->device, device->host).
 1. Host init. Host reads R and generates session keys (host->device, device->host).
-
+1. Every subsequent command exchanged has an associated nonce, ciphertext, and MAC. 
 
 
 
